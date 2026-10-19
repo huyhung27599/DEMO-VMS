@@ -103,3 +103,27 @@ Bản gốc giữ nguyên / ghi chú:
 
 - Lần nạp đầu của dashboard chạy trực tiếp qua `src/features/dashboard/init.ts:initDashboard` (không qua query): đã đăng nhập khi tải trang -> `refresh()` ngay; chưa đăng nhập -> hook một lần ở lần chuyển sang view `app` đầu tiên (thay cho listener `auth-success` `{once:true}`). Cộng với `refetchQueries(['dashboard','refresh'])` của RootLayout (thay `loadDashboardData`) nên cả hai trường hợp đều chạy `refresh()` hai lần như bản gốc (dashboard.js:747-753 + main.js:253-257). Query có `staleTime: Infinity` nên không tự fetch lúc mount.
 - RootLayout chỉ refetch `dashboardKeys.refresh` (không refetch `realtimeAlarms`), tránh gọi thêm `syncAiEventsLocal` lúc đăng nhập.
+
+### Task 6 — Phương tiện
+
+Ánh xạ:
+
+- `frontend/js/vehicle.js:extractDevId/getVehicleTypeLabel/getVehicleTypeClass` → `src/features/vehicle/lib.ts:<same>`
+- `vehicle.js:loadVehicles` (chuẩn hóa nm/pid/pnm/dl) → `queries.ts:vehiclesQueryOptions` + `lib.ts:normalizeVehicle`
+- `vehicle.js:loadCompanies` → `queries.ts:companiesQueryOptions` + `lib.ts:deriveCompanies`; `populateCompanyDropdown` → `<select>` render từ query (`components/VehicleFormModal.tsx`)
+- `vehicle.js:refresh` → `queries.ts:refresh(client)`; `updateTimestamp` → `store.ts:updateTimestamp`
+- `vehicle.js:init (isInitialized, hash === '#vehicle') + hashchange` → `VehicleSection.tsx` effect `[enabled(useModuleEnabled('vehicle')), route === 'vehicle']`
+- `vehicle.js:renderTable` (lọc ô tìm kiếm, debounce 300 ms) → `lib.ts:filterVehicles` + `components/VehicleTable.tsx`; `showTableLoading` → `isFetching`
+- `vehicle.js:openModal/closeModal` → `VehicleSection.tsx:openModal/closeModal` + `components/VehicleFormModal.tsx` (RHF + Zod `schemas.ts`)
+- `vehicle.js:handleSave` → `mutations.ts:useSaveVehicleMutation` + `lib.ts:buildSavePayload`
+- `vehicle.js:deleteVehicle/closeDeleteModal/confirmDelete` → `VehicleSection.tsx` + `components/DeleteVehicleModal.tsx` + `mutations.ts:useDeleteVehicleMutation`
+- `frontend/index.html:1405-1441, 1617-1688`, `css/vehicle.css` → `VehicleSection.tsx`, `components/*` (Tailwind)
+
+Bản gốc giữ nguyên / ghi chú:
+
+- Bản gốc chỉ nạp dữ liệu: lúc `init()` (lần hiển thị app đầu) nếu hash là `#vehicle`, mỗi `hashchange` sang `#vehicle`, và sau lưu/xóa thành công. Không có setInterval, không nạp khi mount. Bản port: query `enabled: false` (chỉ đọc cache), `refresh(client)` dùng `fetchQuery` (gộp lời gọi trùng khi đang nạp, tương đương cờ `isLoading`); effect gọi `refresh` khi `useModuleEnabled('vehicle') && route === 'vehicle'`. `onSuccess` của mutation gọi `refresh()` tuần tự (vehicles rồi companies) thay vì `refetchQueries(['vehicle'])` song song, vì `loadCompanies` suy ra từ danh sách xe.
+- Hàm lọc dùng `extractDevId(v)` trả `'--'` khi thiếu thiết bị nên tìm `-` khớp những xe đó: giữ nguyên. `normalizeVehicle` luôn có `devIdno` truthy (`'--'`).
+- Sửa xe: form điền `devIdno = extractDevId(v)` nên có thể gửi `'--'` lên API; giữ nguyên. `editVehicle` gọi `editDevice.action` (đã có trong endpoints).
+- `<select>` loại xe/đơn vị: giá trị không có trong danh sách thì không chọn gì; FormData bỏ `vehiType` khi không có lựa chọn (`buildSavePayload`), `companyId` luôn gửi (có mục rỗng).
+- Bản gốc `onclick="...('${plate}')"` không escape biển số (hỏng/XSS khi có dấu nháy); JSX escape tự động. Nút sửa/xóa với biển số rỗng: sửa mở modal ở chế độ thêm, xóa mở modal nhưng "Xóa xe" không làm gì (như `!state.currentEditId`).
+- Validate chỉ có hai trường bắt buộc (không trim) và hiện bằng toast cảnh báo, không có lỗi theo trường. Trường `<input hidden name=vehiIdno>` trùng tên với ô biển số nên giá trị cuối (ô biển số) thắng: bỏ phần tử ẩn.
