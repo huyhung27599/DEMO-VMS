@@ -44,7 +44,7 @@ type DriverInfoState = {
   cards: Record<number, DriverCard>
   /** _faceCheckPolls: deviceId -> token của wall có interval 10 s */
   faceCheckPolls: Record<string, number>
-  /** các interval 10 s đang chạy (theo token). Interval bị ghi đè khóa trong _faceCheckPolls vẫn chạy như bản gốc */
+  /** các interval 10 s đang chạy (theo token của wall). Mỗi poll gắn với wall của nó; stopDriverInfoTimers dừng tất cả */
   runningPolls: Record<number, true>
   /** _drivingDurationTimers: deviceId -> token của wall đang có ticker 1 s */
   drivingDurationTimers: Record<string, number>
@@ -86,11 +86,8 @@ function clearFaceCheckPoll(deviceId: string): void {
 /** Phần cuối của stopKeepalive (liveview.js:111-125). _lastDriverIsStranger không bị xóa (như bản gốc). */
 export function stopDriverInfoTimers(): void {
   // _presencePolls: không nơi nào gán -> luôn rỗng
-  set((s) => {
-    const runningPolls = { ...s.runningPolls }
-    Object.values(s.faceCheckPolls).forEach((token) => delete runningPolls[token])
-    return { faceCheckPolls: {}, runningPolls, drivingDurationTimers: {} }
-  })
+  // Dừng mọi poll 10 s (kể cả poll có khóa bị ghi đè — bản gốc để lọt, xem MIGRATION_NOTES Task 11)
+  set({ faceCheckPolls: {}, runningPolls: {}, drivingDurationTimers: {} })
   // Clear driving sessions
   drivingSessions = {}
 }
