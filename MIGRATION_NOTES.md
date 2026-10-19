@@ -227,7 +227,7 @@ Bản gốc giữ nguyên / ghi chú:
 - `liveview.js:pickFirst/normalizeDriverInfo/extractUrlFromLiveHtmlResponse` → `src/features/liveview/lib.ts:<cùng tên>`
 - `liveview.js:resolveUnifiedPlayerUrl/playHlsStream` → `streamController.ts:<cùng tên>`
 - biến module `vehiclesCache`, DOM `#video-grid` (+ class `is-unified`), option/giá trị hai select, class `active` của tab/panel → `src/features/liveview/store.ts:useLiveviewStore` (`vehiclesCache`, `grid`, `gridUnified`, `companyOptions/companyValue`, `vehicleOptions/vehicleValue`, `leftTab`, `rightTab`, `openDropdown`)
-- Điểm nối Task 11 (đúng chỗ gọi của bản gốc): `startAiAlertPolling` (init), `pollAiAlerts` (sau loadVehicleDropdown thành công), `loadApiAiEvents` (click tab `ai-events`), `loadDriverInfoForWall` (renderUnifiedPlayer), `stopDriverInfoTimers` (cuối stopKeepalive) → `src/features/liveview/task11Hooks.ts` (hiện rỗng)
+- Điểm nối Task 11 (đúng chỗ gọi của bản gốc): `startAiAlertPolling` (init), `pollAiAlerts` (sau loadVehicleDropdown thành công), `loadApiAiEvents` (click tab `ai-events`), `loadDriverInfoForWall` (renderUnifiedPlayer), `stopDriverInfoTimers` (cuối stopKeepalive) → `src/features/liveview/task11Hooks.ts` (Task 11 đã thay bằng `aiQueries.ts` / `driverInfo.ts` và xóa file này)
 - `index.html:844-957` (#liveview-section) + `styles2.css:693-695, 836-1211, 1529-1630, 1941-1968, 2084, 2127, 3762-3801` + `responsive-desktop.css:141-148` → `LiveviewSection.tsx`, `components/*`, `liveview.css`; `#liveview-map` (MapContainer) chuyển vào `#rtab-map-view`, luôn mount, tab ẩn bằng class `hidden`
 
 Bản gốc giữ nguyên / ghi chú:
@@ -247,3 +247,36 @@ Bản gốc giữ nguyên / ghi chú:
 - Tên xe (`sanitizeHTML(nm)` chèn qua innerHTML) và tên/ID thiết bị hiển thị qua JSX — cùng chuỗi hiển thị (R13).
 - `useLiveviewStore.leftTab` có thêm giá trị `null` (trước `initTabs`, chưa panel nào `active`; nút Camera vẫn active theo index.html). Brief ghi `selectedDeviceIds`: thay bằng selector `selectSelectedDeviceIds` suy ra từ `grid` (dùng với `useShallow`).
 - `.video-tile` là `div` có `onClick` (không focus được bằng bàn phím) như bản gốc; tile chứa iframe nên không đổi thành `<button>`.
+
+### Task 11 — liveview: cảnh báo AI, sự kiện AI, thông tin tài xế
+
+Ánh xạ:
+
+- `liveview.js:SAFETY_ALARM_TYPES/AI_ALERT_CRITICAL_ARM_TYPES/AI_ALERT_CRITICAL_ALARM_IDS/formatDt` → `src/features/liveview/lib.ts:<cùng tên>`
+- `liveview.js:formatDriverName/extractDriverCode/getDurationString/buildDriverInfoFromListRow` → `lib.ts:<cùng tên>`
+- `liveview.js:getAiAlertListEl/renderAiAlertsDropdown/updateAiAlertBadge/clearAiAlerts/pollAiAlerts` → `src/features/liveview/aiQueries.ts:<cùng tên>`
+- `liveview.js:startAiAlertPolling` (setInterval 15 s + gọi ngay) → `aiQueries.ts:startAiAlertPolling` (cờ `alertPollingStarted`) + `aiAlertsQueryOptions` (key `['liveview','aiAlerts']`, `refetchInterval: 15_000`, `useQuery` trong `LiveviewSection.tsx`)
+- `liveview.js:startAiEventsPolling` (guard "already running") → `aiQueries.ts:startAiEventsPolling` (cờ `pollingStarted`) + `aiEventsQueryOptions` (key `['liveview','aiEvents']`, `refetchInterval: 3000`, `useQuery` trong `components/AiEventsPanel.tsx`, `enabled: pollingStarted && rightTab === 'ai-events'`)
+- `liveview.js:loadApiAiEvents/renderAiEvents (window.renderAiEvents)/loadAiEventThumbnail` → `aiQueries.ts:<cùng tên>` (DOM: `components/AiEventsPanel.tsx`), biến `aiEventsCache/aiAlertsCache/aiAlertsAckTime` → biến module của `aiQueries.ts`; DOM `#ai-events-list` / `#ai-thumb-main-${idx}` / giá trị `#ai-event-search` → `useAiEventsStore` (`list`, `thumbs`, `search`)
+- listener `#refresh-ai-events` / `#ai-event-search` (initRightPanelTabs) → `aiQueries.ts:onRefreshAiEventsClick/onAiSearchInput`
+- `window.openAiEventModal/navModalImg/closeAiEventModal` + `getModalImageUrl/onEscModal` → `aiQueries.ts:<cùng tên>` + `components/AiEventModal.tsx`
+- `liveview.js:loadDriverInfoForWall` (+ closure `refreshDriverCard`) → `src/features/liveview/driverInfo.ts:loadDriverInfoForWall/createRefreshDriverCard`; interval 10 s → `driverInfoQueryOptions(deviceId, token)` (key `['liveview','driverInfo',deviceId,token]`, `useQuery` trong `components/DriverInfoCard.tsx`)
+- `liveview.js:renderDriverInfo/findDriverInList/getLatestIdentifyEvent` → `driverInfo.ts:<cùng tên>` (DOM: `components/DriverInfoCard.tsx`, gắn vào `[data-driver-content]` của `UnifiedPlayer.tsx`)
+- `liveview.js:startDrivingDurationTicker/stopDrivingDurationTicker` → `driverInfo.ts:<cùng tên>` + `tickDrivingDuration` + hook `useDrivingDuration(deviceId, token)` (setInterval 1 000 ms trong effect)
+- biến `_faceCheckPolls/_drivingDurationTimers/_drivingSessions/_lastDriverIsStranger` + phần cuối `stopKeepalive` → `driverInfo.ts` (`useDriverInfoStore.faceCheckPolls/runningPolls/drivingDurationTimers`, biến module `drivingSessions/lastDriverIsStranger`) + `stopDriverInfoTimers`
+- `styles2.css:1334-1527` + `responsive-desktop.css:158-160` (.ai-events-*, .ai-event-card, .ai-card-*) → Tailwind trong `components/AiEventsPanel.tsx`
+
+Bản gốc giữ nguyên / ghi chú:
+
+- `#ai-alert-list`, `#ai-badge`, `#clear-ai-btn` không có trong index.html: `pollAiAlerts` thoát ngay ở dòng đầu (trước mọi lời gọi API) cả ở lần gọi ngay của init, mỗi 15 s, lẫn sau `loadVehicleDropdown`. Query 15 s vẫn chạy (không gọi API). Phần render dropdown/badge được port bằng DOM API (`textContent`, không innerHTML) và chỉ chạy nếu phần tử đó tồn tại; không tạo `AiAlertsDropdown.tsx` vì không có markup để render.
+- Polling sự kiện AI: bản gốc tạo một `setInterval(3000)` chạy mãi từ lần tải thành công đầu tiên và mỗi nhịp kiểm tra tab `ai-events` có `active` không. Bản port: query chỉ `enabled` khi tab đang active, nên nhịp 3 s được đếm lại từ lúc bật tab (sai lệch thời điểm đã chấp nhận). Lần tải khi click tab vẫn gọi trực tiếp (không silent), không qua query (`initialData` + `staleTime: Infinity` để bật query không fetch thêm). Nếu một lần tải mất hơn 3 s, bản gốc chồng thêm lời gọi; TanStack bỏ qua nhịp khi query đang fetch.
+- `startAiEventsPolling` chỉ được gọi sau khi tải thành công: lỗi ở lần đầu ("Lỗi tải dữ liệu. Hãy thử lại sau.") hoặc chưa có xe ("Chưa có phương tiện...") thì không polling. Lỗi khi polling (silent) giữ nguyên danh sách cũ.
+- Sự kiện an toàn từ `syncAiEventsLocal` không có trường `stm` (chỉ `stmStr/timeMs`) nên `loadAiEventThumbnail` luôn ghi icon `fa-image-slash` mà không gọi `performanceReportPhotoListSafe` — vẫn port đủ thân hàm. Thời gian card dùng `ev.fileTime` (không được gán) → luôn hiển thị `stmStr`.
+- `openAiEventModal(idx)` dùng chỉ số trong danh sách ĐÃ LỌC để tra `aiEventsCache` (chưa lọc): khi đang tìm kiếm, modal có thể mở sai sự kiện. Giữ nguyên.
+- Modal: bản gốc không có CSS nào cho `.ai-modal-*` (không có trong `css/*.css` hay index.html) — overlay được chèn cuối `<body>` như khối không định dạng (chỉ có style inline) và `body.style.overflow = 'hidden'`. Giữ nguyên: `createPortal` vào `document.body`, chỉ style inline gốc. Đóng: gỡ class `active`, 300 ms sau mới xóa overlay, trả `overflow` và gỡ listener Esc (timer của overlay cũ vẫn trả `overflow` / gỡ listener dù đã mở overlay mới — như bản gốc).
+- Ảnh thumbnail có sẵn (`ev.images`) lỗi → `src = '/img/placeholder.jpg'`; file này không có trong `frontend/img` nên ảnh lỗi lặp lại như bản gốc.
+- Thẻ tài xế: `loadDriverInfoForWall` chạy trước khi React commit wall nên mọi thứ ghi vào `useDriverInfoStore` theo `token` của wall; "contentEl không còn trong document" ⇔ `grid.token` không còn là token đó / thẻ unmount (query 10 s và ticker 1 s dừng theo). Lần làm mới đầu gọi trực tiếp, interval 10 s chỉ bắt đầu sau khi lần đầu xong (như bản gốc: `await refreshDriverCard()` rồi mới `setInterval`).
+- `startKeepalive` gọi `stopKeepalive`, mà `stopKeepalive` xóa luôn `_faceCheckPolls`, ticker và `_drivingSessions`: nếu lần nhận diện đầu xong TRƯỚC khi iframe/keepalive sẵn sàng thì thẻ tài xế không bao giờ được làm mới nữa và đồng hồ thời gian lái đứng yên. Giữ nguyên (có test).
+- Mỗi nhịp 10 s gọi `face/capture-and-recognize`, `queryDriverList` (khi nhận ra tài xế) và `face-recognition-log` như bản gốc. `_presencePolls` không bao giờ được gán (chỉ bị xóa) — bỏ. `_lastDriverIsStranger` không bị `stopKeepalive` xóa.
+- Interval 10 s của wall cũ (đã gỡ) tick một lần cuối và gọi `stopDrivingDurationTicker(deviceId)` — có thể dừng ticker của wall mới cùng thiết bị trong trường hợp chạy đua hiếm (lần nhận diện đầu của wall cũ xong sau khi wall mới đã dựng); bản port không tái hiện lần tick cuối đó.
+- Tên tài xế, mã, thông báo (`sanitizeHTML` rồi innerHTML) và nội dung card/modal sự kiện AI (`typeName`, `vehicleName`, `position` chèn thẳng qua innerHTML) hiển thị qua JSX — chuỗi được escape (R13). Mỗi lần `renderDriverInfo` / `renderAiEvents` dựng lại nội dung (key theo `rev`) nên ảnh tải lại và `onerror` chạy lại như innerHTML gốc. Hover phóng to ảnh tài xế (`onmouseenter/onmouseleave`) → `hover:scale-*` + `peer-hover:opacity-0` cho chấm trạng thái.

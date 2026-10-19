@@ -104,3 +104,112 @@ export function extractUrlFromLiveHtmlResponse(res: Loose): string {
   }
   return ''
 }
+
+// ── Task 11: cảnh báo AI / sự kiện AI / thông tin tài xế ──
+
+/** liveview.js:32-71 — AI Alert: chỉ cảnh báo các loại “nghiêm trọng” (có thể tuỳ chỉnh theo nghiệp vụ) */
+export const SAFETY_ALARM_TYPES: Record<string, string> = {
+  // ADAS
+  600: 'Va chạm phía trước',
+  601: 'Va chạm phía trước',
+  602: 'Lệch làn đường',
+  603: 'Lệch làn đường',
+  604: 'Khoảng cách xe quá gần',
+  605: 'Khoảng cách xe quá gần',
+  606: 'Va chạm người đi bộ',
+  607: 'Va chạm người đi bộ',
+  608: 'Chuyển làn liên tục',
+  609: 'Chuyển làn liên tục',
+  610: 'Vượt biển báo',
+  611: 'Vượt biển báo',
+  612: 'Chướng ngại vật',
+  613: 'Chướng ngại vật',
+  // DSM
+  618: 'Lái xe mệt mỏi',
+  619: 'Lái xe mệt mỏi',
+  620: 'Nghe điện thoại',
+  621: 'Nghe điện thoại',
+  622: 'Hút thuốc',
+  623: 'Hút thuốc',
+  624: 'Mất tập trung',
+  625: 'Mất tập trung',
+  626: 'Tài xế bất thường',
+  627: 'Tài xế bất thường',
+  // Basic DSM
+  190: 'Ngáp',
+  // Driver change / identify
+  630: 'Thay đổi tài xế',
+  631: 'Thay đổi tài xế',
+  639: 'Kính râm che mắt',
+  640: 'Kính râm che mắt',
+  636: 'Nhận dạng tài xế',
+  643: 'Sự kiện nhận dạng tài xế',
+}
+export const AI_ALERT_CRITICAL_ARM_TYPES = [618, 619, 620, 621, 624, 625, 626, 627]
+export const AI_ALERT_CRITICAL_ALARM_IDS = AI_ALERT_CRITICAL_ARM_TYPES.join(',')
+
+/** liveview.js:301-303 — ngày theo UTC (toISOString) + giờ địa phương (giữ nguyên lệch múi giờ của bản gốc) */
+export function formatDt(dt: Date): string {
+  return dt.toISOString().split('T')[0] + ' ' + dt.toTimeString().split(' ')[0]
+}
+
+/** liveview.js:1383-1393 */
+export function formatDriverName(rawName: string | null | undefined): string {
+  if (!rawName) return 'Chưa nhận dạng'
+  // Xóa dấu gạch dưới và định dạng: 8899_Nguyễn_Văn_Trường -> Nguyễn Văn Trường (8899)
+  const match = rawName.match(/^(\d+)_+(.*)$/)
+  if (match) {
+    const id = match[1]
+    const namePart = match[2].replace(/_/g, ' ').trim()
+    return `${namePart} (${id})`
+  }
+  return rawName.replace(/_/g, ' ').trim()
+}
+
+/** liveview.js:1395-1404 */
+export function extractDriverCode(rawName: unknown): string {
+  const name = String(rawName || '').trim()
+  if (!name) return ''
+  const bracket = name.match(/\(([^)]+)\)\s*$/)
+  if (bracket && bracket[1]) return bracket[1].trim()
+  const prefix = name.match(/^(\d+)_/)
+  if (prefix && prefix[1]) return prefix[1].trim()
+  if (/^\d+$/.test(name)) return name
+  return ''
+}
+
+/** liveview.js:1406-1413 — HH:MM:SS kể từ startTime */
+export function getDurationString(startTime: number): string {
+  const diff = Math.max(0, Date.now() - startTime)
+  const s = Math.floor(diff / 1000) % 60
+  const m = Math.floor(diff / 60000) % 60
+  const h = Math.floor(diff / 3600000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(h)}:${pad(m)}:${pad(s)}`
+}
+
+export type DriverListRowInfo = { name: string; license: string; phone: string; avatar: string }
+
+/** liveview.js:1477-1496 — Build a driver info object from a queryDriverList row. */
+export function buildDriverInfoFromListRow(d: Loose): DriverListRowInfo | null {
+  if (!d) return null
+  const name = d.dn || d.name || d.driverName || ''
+  const license = d.jn || d.driverJn || d.licenseNum || d.id || ''
+  const phone = d.dt || d.phone || d.mobile || ''
+
+  let avatar = ''
+  const faceRaw = d.facePhotoUrl || d.facePhoto || d.photoUrl || ''
+  if (faceRaw) {
+    const parts: string[] = faceRaw
+      .split(';')
+      .map((s: string) => s.trim())
+      .filter(Boolean)
+    if (parts.length > 0) {
+      let url = parts[0]
+      if (url.startsWith('/')) url = `https://fleetscontrol.com${url}`
+      else if (!url.startsWith('http')) url = `https://fleetscontrol.com/${url}`
+      avatar = url
+    }
+  }
+  return { name, license, phone, avatar }
+}

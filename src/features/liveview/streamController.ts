@@ -1,7 +1,7 @@
 import Hls from 'hls.js'
 import { api } from '../../shared/api/endpoints'
 import { extractUrlFromLiveHtmlResponse, KEEPALIVE_INTERVAL_MS, type Loose } from './lib'
-import { stopDriverInfoTimers } from './task11Hooks'
+import { stopDriverInfoTimers } from './driverInfo'
 
 // Phần luồng video của window.LiveViewModule (liveview.js:3-6, 73-171, 1710-1852).
 // Trạng thái giữ ở biến module như bản gốc.
@@ -51,7 +51,7 @@ export function stopKeepalive(): void {
   }
   activeDeviceId = null
   activeIframe = null
-  // Also clear any driver presence polling (+ face check, driving duration, sessions) — Task 11
+  // Also clear any driver presence polling (+ face check, driving duration, sessions)
   stopDriverInfoTimers()
 }
 

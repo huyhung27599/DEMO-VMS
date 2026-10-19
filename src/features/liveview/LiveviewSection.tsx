@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useModuleEnabled } from '../../app/useModuleEnabled'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection, SectionHeader } from '../../shared/ui/Section'
 import { MapContainer } from '../map/MapContainer'
+import { aiAlertsQueryOptions, useAiEventsStore } from './aiQueries'
 import { initLiveview, onLeftTabClick, onRefreshClick, onRightTabClick } from './actions'
 import { AiEventsPanel } from './components/AiEventsPanel'
 import { CompanyDropdown } from './components/CompanyDropdown'
@@ -43,6 +45,9 @@ export function LiveviewSection({ hidden }: { hidden: boolean }) {
   const enabled = useModuleEnabled('liveview')
   const leftTab = useLiveviewStore((s) => s.leftTab)
   const rightTab = useLiveviewStore((s) => s.rightTab)
+  // startAiAlertPolling (init): pollAiAlerts ngay + mỗi 15 s
+  const alertPollingStarted = useAiEventsStore((s) => s.alertPollingStarted)
+  useQuery({ ...aiAlertsQueryOptions(), enabled: alertPollingStarted })
 
   // main.js:51-53 — LiveViewModule.init() ở lần showApp đầu (guard isInitialized)
   useEffect(() => {

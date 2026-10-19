@@ -5,7 +5,8 @@ import type { Loose } from './lib'
 import { liveviewVehiclesQueryOptions, loadDriverMapping } from './queries'
 import { useLiveviewStore, type LeftTab, type RightTab } from './store'
 import { createUnifiedPlayerIframe, stopKeepalive } from './streamController'
-import { loadApiAiEvents, loadDriverInfoForWall, pollAiAlerts, startAiAlertPolling } from './task11Hooks'
+import { loadApiAiEvents, pollAiAlerts, startAiAlertPolling } from './aiQueries'
+import { loadDriverInfoForWall } from './driverInfo'
 
 // Phần điều phối của window.LiveViewModule (liveview.js:173-295, 985-1197).
 // DOM do React render từ useLiveviewStore; các hàm dưới đây ghi store đúng như bản gốc ghi DOM.
@@ -93,7 +94,7 @@ export function onRightTabClick(tab: RightTab): void {
       mapController.handleResize()
     }, 100)
   } else if (tab === 'ai-events') {
-    loadApiAiEvents()
+    void loadApiAiEvents()
   }
 }
 
@@ -135,7 +136,7 @@ export async function loadVehicleDropdown(): Promise<void> {
       })
 
       // Update AI alerts immediately after we have device list
-      pollAiAlerts()
+      void pollAiAlerts()
     } else {
       set({ vehicleOptions: { kind: 'error' }, vehicleValue: '' })
     }
@@ -210,7 +211,7 @@ export async function renderUnifiedPlayer(vehicleName: string, deviceId: string,
   set({
     grid: { kind: 'player', token, vehicleName, deviceId, vehiIdno, iframe: null, failed: false },
   })
-  loadDriverInfoForWall(deviceId, token, vehiIdno)
+  void loadDriverInfoForWall(deviceId, token, vehiIdno)
 
   const isCurrent = () => {
     const g = get().grid

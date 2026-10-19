@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { onTileClick } from '../actions'
 import type { GridView } from '../store'
+import { DriverInfoCard } from './DriverInfoCard'
 
 // liveview.js:1127-1197 renderUnifiedPlayer (phần DOM) + styles2.css:1539-1630 (.video-wall, .video-tile...).
 
@@ -31,12 +32,12 @@ export function UnifiedPlayer({ view }: { view: PlayerView }) {
           <div className="mt-[2px] text-[0.75rem] text-[#1e3a8a] opacity-90">Thiết bị: {deviceId}</div>
         </div>
         <div className="liveview-driver-compact relative z-[100] ml-auto flex max-w-[48%] min-w-[200px] items-center overflow-visible! rounded-[8px] border border-solid border-[rgba(30,64,175,0.2)] bg-white/85 px-[0.6rem] py-[0.4rem] text-[0.75rem] text-[#1f2937] shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
-          {/* [data-driver-content]: Task 11 (loadDriverInfoForWall / renderDriverInfo) điền nội dung */}
+          {/* [data-driver-content]: loadDriverInfoForWall / renderDriverInfo (driverInfo.ts) */}
           <div
             className="liveview-driver-content flex w-full items-center gap-[10px] overflow-visible!"
             data-driver-content=""
           >
-            <div className="text-text-muted">Đang tải thông tin...</div>
+            <DriverInfoCard deviceId={deviceId} token={view.token} />
           </div>
         </div>
       </div>

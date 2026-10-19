@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { extractUrlFromLiveHtmlResponse, normalizeDriverInfo, pickFirst } from './lib'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  buildDriverInfoFromListRow,
+  extractDriverCode,
+  extractUrlFromLiveHtmlResponse,
+  formatDriverName,
+  getDurationString,
+  normalizeDriverInfo,
+  pickFirst,
+} from './lib'
 
 const PLAYER = 'https://fleetscontrol.com/808gps/open/player/RealPlayVideo.html?jsession=abc&PlateNum=51A'
 
@@ -82,5 +90,76 @@ describe('normalizeDriverInfo', () => {
     ['data là mảng rỗng -> null', { result: 0, data: [] }, null],
   ])('%s', (_name, input, expected) => {
     expect(normalizeDriverInfo(input)).toEqual(expected)
+  })
+})
+
+describe('getDurationString', () => {
+  afterEach(() => vi.useRealTimers())
+  it.each([
+    ['0 ms', 0, '00:00:00'],
+    ['999 ms', 999, '00:00:00'],
+    ['1 s', 1000, '00:00:01'],
+    ['59 s', 59_000, '00:00:59'],
+    ['1 phút 5 s', 65_000, '00:01:05'],
+    ['1 giờ', 3_600_000, '01:00:00'],
+    ['25 giờ 1 phút 1 s', 90_061_000, '25:01:01'],
+    ['startTime ở tương lai -> 0', -5000, '00:00:00'],
+  ])('%s', (_label, elapsed, expected) => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000_000_000)
+    expect(getDurationString(1_000_000_000 - elapsed)).toBe(expected)
+  })
+})
+
+describe('formatDriverName', () => {
+  it.each([
+    [null, 'Chưa nhận dạng'],
+    ['', 'Chưa nhận dạng'],
+    ['8899_Nguyễn_Văn_Trường', 'Nguyễn Văn Trường (8899)'],
+    ['8899__Nguyen_A', 'Nguyen A (8899)'],
+    ['Nguyen_Van_A', 'Nguyen Van A'],
+    ['  Tran B  ', 'Tran B'],
+    ['8899', '8899'],
+  ])('%s -> %s', (raw, expected) => {
+    expect(formatDriverName(raw)).toBe(expected)
+  })
+})
+
+describe('extractDriverCode', () => {
+  it.each([
+    [undefined, ''],
+    ['', ''],
+    ['Nguyễn Văn Trường (8899)', '8899'],
+    ['Nguyen A ( 77 )  ', '77'],
+    ['8899_Nguyen_A', '8899'],
+    ['8899', '8899'],
+    ['Unknown', ''],
+    ['Ignored', ''],
+  ])('%s -> %s', (raw, expected) => {
+    expect(extractDriverCode(raw)).toBe(expected)
+  })
+})
+
+describe('buildDriverInfoFromListRow', () => {
+  it.each([
+    ['null', null, null],
+    [
+      'dn/jn/dt + facePhotoUrl tương đối (";" phân tách)',
+      { dn: 'Nguyen A', jn: '8899', dt: '0901', facePhotoUrl: '/img/a.jpg; /img/b.jpg' },
+      { name: 'Nguyen A', license: '8899', phone: '0901', avatar: 'https://fleetscontrol.com/img/a.jpg' },
+    ],
+    [
+      'tên dự phòng + đường dẫn không có "/"',
+      { name: 'B', driverJn: 'J1', mobile: '09', facePhoto: 'x/y.png' },
+      { name: 'B', license: 'J1', phone: '09', avatar: 'https://fleetscontrol.com/x/y.png' },
+    ],
+    [
+      'URL tuyệt đối giữ nguyên; license lấy id',
+      { driverName: 'C', id: 5, photoUrl: 'https://cdn/x.jpg' },
+      { name: 'C', license: 5, phone: '', avatar: 'https://cdn/x.jpg' },
+    ],
+    ['object rỗng', {}, { name: '', license: '', phone: '', avatar: '' }],
+  ])('%s', (_label, row, expected) => {
+    expect(buildDriverInfoFromListRow(row)).toEqual(expected)
   })
 })
