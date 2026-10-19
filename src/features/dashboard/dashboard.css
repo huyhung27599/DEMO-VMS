@@ -1,0 +1,43 @@
+/* styles2.css:2384-2408, 2533-2541 — hiệu ứng pulse-ring dùng chung cho kpi-pulse-dot và live-dot */
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+  }
+}
+
+.dashboard-pulse {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.dashboard-pulse-live {
+  animation: pulse-ring 1.2s ease-out infinite;
+}
+
+/* .kpi-card::before / ::after: hai vòng tròn trang trí */
+.dashboard-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -20px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}

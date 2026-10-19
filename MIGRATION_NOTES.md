@@ -73,3 +73,28 @@
 - `legacyHashHistory` ghi `history.pushState/replaceState` đồng bộ (createBrowserHistory gom bằng microtask).
 - Sidebar giãn rộng cả khi focus BÀN PHÍM (`:focus-visible`) nằm trong sidebar, ngoài `:hover` như bản gốc (focus do click chuột không giữ sidebar mở — rời chuột là co lại như bản gốc), để nhãn menu và nút "Đăng xuất" nhìn thấy khi dùng bàn phím. Nút ẩn/hiện mật khẩu là `<button aria-label>` thay cho `<svg>` click được. Nút đóng modal có `aria-label="Đóng"`.
 - `createQueryClient()` đặt mặc định `refetchIntervalInBackground: true` cho mọi query (setInterval của bản gốc không dừng khi tab bị ẩn); query polling không cần tự đặt cờ này nữa.
+
+### Task 5 — Dashboard
+
+Ánh xạ:
+
+- `frontend/js/dashboard.js:today/todayDatetime/normalizeId/formatTime/getStatusBadge` → `src/features/dashboard/lib.ts:<same>` (`getStatusBadge` trả `{kind,label}` thay cho chuỗi HTML `<span class="veh-status-badge ...">`)
+- `frontend/js/dashboard.js:updateLastUpdated` → `lib.ts:lastUpdatedText` + `loaders.ts:updateLastUpdated`
+- `frontend/js/dashboard.js:setKpi/setProgress` → `src/features/dashboard/loaders.ts:setKpi/setProgress` (ghi vào `store.ts:useDashboardStore`)
+- `frontend/js/dashboard.js:renderVehicleTable/renderAlarmFeed` → `loaders.ts:renderVehicleTable/renderAlarmFeed` (ảnh chụp dữ liệu vào store) + `components/LiveVehiclesPanel.tsx`, `components/AlarmFeed.tsx` (JSX); bảng tra `alarmTypeMap/getSeverity/nameMap` → `lib.ts:ALARM_TYPE_MAP/getSeverity/ALARM_NAME_MAP`
+- `frontend/js/dashboard.js:initCharts/updateStatusChart/updateOnlineTrend/updateAlarmDistChart/updateAlarmRankChart/updateMileageRankChart` → `src/features/dashboard/chartsController.ts:DashboardChartsController.<same>`; `resizeAll` → `resize()`; `_onlineTrendData` nằm trong controller
+- `frontend/js/dashboard.js:loadDriverMapping/loadVehicleStatus/loadVehicles/loadAlarms/pollRealtimeAlarms/loadMileage/refresh` → `src/features/dashboard/loaders.ts:<same>`; state module `_vehicles/_cachedAlarms/_driverMapping` ở `loaders.ts`
+- `frontend/js/dashboard.js:init (setInterval 120_000 / 60_000)` → `src/features/dashboard/queries.ts:dashboardRefreshQueryOptions/realtimeAlarmsQueryOptions` (dùng trong `DashboardSection.tsx`)
+- `frontend/js/dashboard.js:init (nút làm mới, refresh-alarm-feed, tìm kiếm, "Xem tất cả")` → `DashboardSection.tsx` / `components/*` (làm mới → `refetchQueries(['dashboard','refresh'])`; nút báo động gọi thẳng `loadAlarms`)
+- `frontend/js/dashboard.js:init (nav-item click -> setTimeout 150 resize)` → `DashboardSection.tsx` `onSectionShown('dashboard', resize)` (150 ms nằm trong `useActiveSection`); `window resize` và `.sidebar transitionend` gắn trong `initCharts`
+- `frontend/index.html:636-845` → `DashboardSection.tsx` + `components/{KpiCard,ChartCard,LiveVehiclesPanel,AlarmFeed}.tsx`; `styles2.css:2181-2780` → Tailwind + `dashboard.css` (pulse-ring, vòng tròn trang trí KPI)
+
+Bản gốc giữ nguyên / ghi chú:
+
+- Bản gốc KHÔNG gọi API lúc `DOMContentLoaded` khi chưa đăng nhập (chờ `auth-success`), chỉ hai `setInterval` chạy và gọi API không token. Bản port giữ đúng: query có `initialData: null` và `staleTime: Infinity` khi chưa có token nên không fetch lúc mount; `refetchInterval` vẫn chạy. Đã đăng nhập khi tải trang thì fetch ngay (giống `refresh()` ở init) và `RootLayout` refetch thêm (giống `loadDashboardData`).
+- `realtimeAlarms` không có lần nạp đầu ở bản gốc, nhưng `RootLayout` `refetchQueries({queryKey:['dashboard']})` khi showApp cũng refetch khóa này: `syncAiEventsLocal` bị gọi thêm một lần khi đăng nhập so với bản gốc (refresh() đã gọi loadAlarms). Chấp nhận (khóa phải bắt đầu bằng `dashboard`).
+- `_driverMapping` chỉ được ghi, không được đọc ở đâu. `loadMileage` chạy với `_vehicles` ở thời điểm gọi (khi `loadVehicles` lỗi thì dùng danh sách cũ).
+- `renderVehicleTable` của `loadVehicles` hiển thị chưa lọc rồi `loadVehicleStatus` mới áp bộ lọc ô tìm kiếm: giữ nguyên.
+- Bản gốc chèn `type`/`plate` của báo động vào `innerHTML` không escape (XSS tiềm ẩn); JSX escape tự động. Biển số bảng xe vốn đã `sanitizeHTML` nên hiển thị như nhau.
+- `formatTime` với chuỗi không hợp lệ không ném lỗi nên không bao giờ trả `'--'` (cho ra `NaN/NaN NaN:NaN`): giữ nguyên.
+- Test: `echarts` được mock toàn cục trong `src/test/setup.ts` (jsdom không có canvas).
