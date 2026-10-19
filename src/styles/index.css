@@ -37,6 +37,23 @@
   --animate-section-in: section-fade-in 0.3s ease;
   /* main.js showApp/showLogin: opacity 0 -> 1 trong 0.3s */
   --animate-fade-in: fade-in 0.3s ease;
+  /* event-server.js injectStyles: .ai-toast-icon pulseHeart */
+  --animate-pulse-heart: pulse-heart 1.5s infinite;
+
+  @keyframes pulse-heart {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    }
+    70% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
 
   @keyframes fade-in {
     from {

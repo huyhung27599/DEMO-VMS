@@ -372,3 +372,12 @@ Bản gốc giữ nguyên / ghi chú:
 - Modal bằng chứng: bản gốc không đóng khi click nền — giữ (không dùng `shared/ui/Modal`). Khác biệt nhỏ do dùng query: (1) mở A, đóng, mở B khi A chưa xong — bản gốc để kết quả A ghi đè modal B một lúc; bản mới chỉ hiển thị kết quả của sự kiện đang mở; (2) đóng rồi mở lại CÙNG sự kiện khi lần tải trước chưa xong → query gộp, chỉ một chuỗi lời gọi.
 - Tên xe, tên vi phạm, mức độ, vị trí, thời gian trong bảng/modal/xếp hạng hiển thị qua JSX (bản gốc `sanitizeHTML` → innerHTML) — tương đương; thông báo lỗi `err.message` cũng được escape (R13). `onerror` của ảnh (thay nội dung khung bằng "Không tải được ảnh") → state `imgFailed`.
 - `AppHelpers.showLoader/hideLoader` không đếm: lần tải xong đầu tiên ẩn loader dù lần khác còn chạy — giữ nguyên.
+
+### Task 15 — event-server (toast cảnh báo AI chạy nền)
+
+- `event-server.js:CRITICAL_ALARM_TYPES/SAFETY_ALARM_TYPES/ALARM_IDS/formatTime/formatDt(trong pollAlarms)` → `src/features/event-server/lib.ts:<cùng tên>`
+- `event-server.js:showToast/removeToast` → `store.ts:showAiToast/removeAiToast` (`useAiToastStore`; tên khác `shared/ui/toastStore` của AppHelpers); âm báo → `sound.ts:playAiToastSound`
+- `event-server.js:pollAlarms/seenAlerts` → `queries.ts:pollAlarms` (+ biến module `seenAlerts`); `startPolling/init` → `queries.ts:useEventServerPolling` (query `refetchInterval: 15000`, `enabled` = `useModuleEnabled('event-server')`, `initialData: null` + `staleTime: Infinity` vì bản gốc KHÔNG poll ngay khi init)
+- `injectStyles/createToastContainer` + markup toast → `components/AiToastStack.tsx` (Tailwind; keyframes `pulse-heart` trong `styles/index.css`); `main.js:63-65` → `AiToastStack` mount trong `RootLayout`
+- Bản gốc giữ nguyên / ghi chú: lần poll đầu tiên (15 s sau showApp) toast MỌI cảnh báo nghiêm trọng trong cửa sổ 15 s (không seed `seenAlerts`); `lastFetchTime` không dùng (bỏ); cửa sổ truy vấn 15 s trùng chu kỳ nên cảnh báo sát biên có thể bị bỏ sót/lặp (guid/khóa chống lặp); `seenAlerts` thêm id kể cả cảnh báo không nghiêm trọng; `res.result !== 0` hoặc lỗi → chỉ `console.warn`; chưa đăng nhập → bỏ qua; `showToast` đọc `localStorage` mỗi lần hiển thị.
+- `index.html` không có section `event-server` → `EventServerSection` giữ nguyên là section rỗng.
