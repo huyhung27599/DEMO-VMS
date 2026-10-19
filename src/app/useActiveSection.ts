@@ -60,6 +60,28 @@ export function notifySectionShown(id: AppRoute): void {
   sectionCallbacks.get(id)?.forEach((cb) => cb())
 }
 
+// ── onNavItemClick: thay cho các listener click riêng mà module gắn lên `.nav-item[data-target=…]`
+//    (vd. driver.js:1638-1653). Chạy ở MỌI lần click, kể cả click lại route đang active (không có hashchange).
+const navClickCallbacks = new Map<string, Set<SectionCallback>>()
+
+/** Đăng ký callback chạy đồng bộ mỗi khi nav item `id` được click. Trả về hàm hủy. */
+export function onNavItemClick(id: AppRoute, cb: SectionCallback): () => void {
+  let set = navClickCallbacks.get(id)
+  if (!set) {
+    set = new Set()
+    navClickCallbacks.set(id, set)
+  }
+  set.add(cb)
+  return () => {
+    navClickCallbacks.get(id)?.delete(cb)
+  }
+}
+
+/** Gọi ngay mọi callback click đã đăng ký cho nav item `id` (Sidebar gọi). */
+export function notifyNavItemClick(id: AppRoute): void {
+  navClickCallbacks.get(id)?.forEach((cb) => cb())
+}
+
 /**
  * Route đang active lấy từ router. Đồng thời chạy side effect của switchSection
  * (main.js:139-175): khi app đang hiển thị, 150 ms sau khi đổi section thì gọi các

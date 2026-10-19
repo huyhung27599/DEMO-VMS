@@ -1,38 +1,62 @@
-import { onSectionShown } from '../../app/useActiveSection'
+import { onNavItemClick } from '../../app/useActiveSection'
 import { buildVehicleMap } from './faceEvents'
 import { loadDrivers, showFaceServiceHealth } from './queries'
 import { renderDrivers, useDriverStore } from './store'
 
-/**
- * driver.js:1622-1665 "Auto-init when section is shown". Bản gốc có ba đường kích hoạt:
- * MutationObserver trên #driver-section, click nav [data-target=driver] (+50 ms) và kiểm tra một lần sau 200 ms.
- * Cả ba gộp vào onSectionShown('driver') (150 ms sau khi section hiển thị, chỉ khi app đang hiển thị),
- * theo logic của listener click nav (nhánh đầy đủ nhất).
- * Không có setInterval; không nạp gì khi section chưa từng hiển thị.
- */
-export function onDriverSectionShown(): void {
+// driver.js:1622-1665 "Auto-init when section is shown" — ba đường kích hoạt như bản gốc.
+
+/** #driver-section đang hiển thị (getComputedStyle(section).display !== 'none'); DriverSection cập nhật. */
+let sectionVisible = false
+
+function loadAllIfEmpty(): void {
   const { driversData, isLoadingDrivers } = useDriverStore.getState()
-  if (driversData.length === 0 && !isLoadingDrivers) {
+  if (sectionVisible && driversData.length === 0 && !isLoadingDrivers) {
     void buildVehicleMap()
     void showFaceServiceHealth()
     void loadDrivers()
-  } else if (driversData.length > 0) {
-    // Re-render if already loaded (data might be stale)
-    renderDrivers(driversData)
-    void showFaceServiceHealth()
   }
 }
 
-let unsubscribe: (() => void) | null = null
+/**
+ * 1. MutationObserver (driver.js:1626-1634): section vừa hiển thị (đổi route sang driver, hoặc hiện lại app
+ *    khi đang ở #driver) -> chỉ nạp khi danh sách rỗng và không đang nạp. Ngoài ra không làm gì.
+ */
+export function onDriverSectionVisibility(visible: boolean): void {
+  sectionVisible = visible
+  if (visible) loadAllIfEmpty()
+}
 
-/** Đăng ký một lần (StrictMode chạy effect hai lần). */
+/** 2. Click nav [data-target=driver] (driver.js:1638-1653): sau 50 ms, kể cả khi click lại route đang active. */
+export function onDriverNavClick(): void {
+  setTimeout(() => {
+    const { driversData, isLoadingDrivers } = useDriverStore.getState()
+    if (driversData.length === 0 && !isLoadingDrivers) {
+      void buildVehicleMap()
+      void showFaceServiceHealth()
+      void loadDrivers()
+    } else if (driversData.length > 0) {
+      // Re-render if already loaded (data might be stale)
+      renderDrivers(driversData)
+      void showFaceServiceHealth()
+    }
+  }, 50)
+}
+
+let unsubscribe: (() => void) | null = null
+let initialCheck: ReturnType<typeof setTimeout> | undefined
+
+/** Đăng ký một lần lúc tải trang (StrictMode chạy effect hai lần). */
 export function initDriver(): void {
   if (unsubscribe) return
-  unsubscribe = onSectionShown('driver', onDriverSectionShown)
+  unsubscribe = onNavItemClick('driver', onDriverNavClick)
+  // 3. Kiểm tra một lần sau 200 ms (driver.js:1657-1664)
+  initialCheck = setTimeout(loadAllIfEmpty, 200)
 }
 
 /** Chỉ dùng trong test. */
 export function resetDriverInit(): void {
   unsubscribe?.()
   unsubscribe = null
+  clearTimeout(initialCheck)
+  sectionVisible = false
 }

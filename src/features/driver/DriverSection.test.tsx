@@ -35,7 +35,9 @@ import { Vietnamese } from 'flatpickr/dist/l10n/vn'
 import { api } from '../../shared/api/endpoints'
 import { queryClient } from '../../shared/query/queryClient'
 import { useToastStore } from '../../shared/ui/toastStore'
-import { notifySectionShown } from '../../app/useActiveSection'
+import { create } from 'zustand'
+import { notifyNavItemClick } from '../../app/useActiveSection'
+import { useAuthStore } from '../../shared/auth/authStore'
 import { resetFaceState } from './faceEvents'
 import { resetDriverInit } from './init'
 import { resetDriverStore } from './store'
@@ -66,6 +68,7 @@ beforeEach(() => {
   useToastStore.setState({ toasts: [] })
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
   vi.mocked(flatpickr).mockClear()
+  useAuthStore.setState({ view: 'app', hasShownApp: true })
   vi.mocked(api.queryDriverList).mockReset().mockResolvedValue({ result: 0, infos: [NV1, NV2] })
   vi.mocked(api.queryUserVehicle).mockReset().mockResolvedValue({ result: 0, vehicles: [] })
   vi.mocked(api.faceHealth).mockReset().mockResolvedValue({ status: 'ok', known_drivers: 3 } as never)
@@ -81,21 +84,38 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllGlobals()
+  useAuthStore.setState({ view: 'login', hasShownApp: false })
 })
 
-async function renderDriver({ strict = false } = {}) {
-  const r = renderWithProviders(<DriverSection hidden={false} />, { route: '/driver', strict })
+/** Section ẩn/hiện như AppShell (hidden = route khác driver). */
+const useHarness = create<{ hidden: boolean }>(() => ({ hidden: true }))
+function Harness() {
+  const hidden = useHarness((s) => s.hidden)
+  return <DriverSection hidden={hidden} />
+}
+
+async function renderDriver({ strict = false, hidden = true } = {}) {
+  useHarness.setState({ hidden })
+  const r = renderWithProviders(<Harness />, { route: '/driver', strict })
   await screen.findByText('Quản lý tài xế')
   return r
 }
 
+/** Đổi route sang #driver (MutationObserver của bản gốc). */
 async function showSection() {
-  act(() => notifySectionShown('driver'))
+  act(() => useHarness.setState({ hidden: false }))
+}
+function hideSection() {
+  act(() => useHarness.setState({ hidden: true }))
+}
+async function wait(ms: number) {
+  await act(() => new Promise((r) => setTimeout(r, ms)))
 }
 
 describe('thời điểm nạp (driver.js:1622-1665)', () => {
-  it('không gọi API khi mount; chỉ nạp khi section được hiển thị', async () => {
+  it('không gọi API khi mount (section ẩn), kể cả sau kiểm tra 200 ms; nạp khi section hiển thị', async () => {
     await renderDriver()
+    await wait(250)
     expect(api.queryDriverList).not.toHaveBeenCalled()
     expect(api.faceHealth).not.toHaveBeenCalled()
     expect(screen.getByText(/Đang kiểm tra AI Service/)).toBeInTheDocument()
@@ -108,20 +128,63 @@ describe('thời điểm nạp (driver.js:1622-1665)', () => {
     expect(screen.getByText('Database: 3 tài xế')).toBeInTheDocument()
   })
 
-  it('StrictMode: đăng ký một lần, nạp một lần', async () => {
-    await renderDriver({ strict: true })
-    await showSection()
+  it('tải trang khi đang ở #driver: đúng một bộ (vehicle map + health + danh sách)', async () => {
+    await renderDriver({ hidden: false })
     await screen.findByText('Nguyễn Văn A')
+    await wait(300) // qua mốc kiểm tra 200 ms
+    expect(api.queryDriverList).toHaveBeenCalledTimes(1)
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
+    expect(api.queryUserVehicle).toHaveBeenCalledTimes(1)
+  })
+
+  it('StrictMode: đăng ký một lần, nạp một lần', async () => {
+    await renderDriver({ strict: true, hidden: false })
+    await screen.findByText('Nguyễn Văn A')
+    await wait(300)
+    expect(api.queryDriverList).toHaveBeenCalledTimes(1)
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
+  })
+
+  it('hiển thị lại (đổi hash bằng tay) khi đã có dữ liệu: không gọi gì (observer có guard)', async () => {
+    await renderDriver({ hidden: false })
+    await screen.findByText('Nguyễn Văn A')
+    await waitFor(() => expect(api.faceHealth).toHaveBeenCalledTimes(1))
+    hideSection()
+    await showSection()
+    await wait(100)
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
+    expect(api.queryDriverList).toHaveBeenCalledTimes(1)
+    expect(api.queryUserVehicle).toHaveBeenCalledTimes(1)
+  })
+
+  it('đăng nhập lại khi đang ở #driver và đã có dữ liệu: không kiểm tra health', async () => {
+    await renderDriver({ hidden: false })
+    await screen.findByText('Nguyễn Văn A')
+    await waitFor(() => expect(api.faceHealth).toHaveBeenCalledTimes(1))
+    act(() => useAuthStore.setState({ view: 'login' }))
+    act(() => useAuthStore.setState({ view: 'app' }))
+    await wait(100)
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
     expect(api.queryDriverList).toHaveBeenCalledTimes(1)
   })
 
-  it('hiển thị lại khi đã có dữ liệu: không nạp lại danh sách, chỉ kiểm tra AI service', async () => {
-    await renderDriver()
-    await showSection()
+  it('click nav driver khi đang ở #driver (không có hashchange): sau 50 ms render lại + kiểm tra health', async () => {
+    await renderDriver({ hidden: false })
     await screen.findByText('Nguyễn Văn A')
     await waitFor(() => expect(api.faceHealth).toHaveBeenCalledTimes(1))
-    await showSection()
-    await waitFor(() => expect(api.faceHealth).toHaveBeenCalledTimes(2))
+    act(() => notifyNavItemClick('driver'))
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
+    await wait(60)
+    expect(api.faceHealth).toHaveBeenCalledTimes(2)
+    expect(api.queryDriverList).toHaveBeenCalledTimes(1)
+  })
+
+  it('click nav driver khi danh sách rỗng và không đang nạp: sau 50 ms chạy đủ bộ', async () => {
+    await renderDriver()
+    act(() => notifyNavItemClick('driver'))
+    await wait(60)
+    expect(api.queryUserVehicle).toHaveBeenCalledTimes(1)
+    expect(api.faceHealth).toHaveBeenCalledTimes(1)
     expect(api.queryDriverList).toHaveBeenCalledTimes(1)
   })
 })
@@ -230,7 +293,7 @@ describe('sự kiện nhận diện + lightbox', () => {
         },
       ],
     })
-    const { container } = await renderDriver()
+    const { container } = await renderDriver({ hidden: false })
     fireEvent.click(container.querySelector('.dtab-btn[data-dtab="ai-faces"]')!)
     fireEvent.change(screen.getByLabelText('Lọc theo biển số'), { target: { value: '29a' } })
     fireEvent.click(screen.getByRole('button', { name: /Tìm kiếm/ }))
@@ -324,7 +387,7 @@ describe('lưu tài xế (driver.js:1957-2084)', () => {
   })
 
   it('thiếu Hạng GPLX: toast lỗi, không gọi API', async () => {
-    await renderDriver()
+    await renderDriver({ hidden: false })
     fireEvent.click(screen.getByRole('button', { name: /Thêm Tài xế/ }))
     fireEvent.change(screen.getByLabelText(/Mã Nhân Viên/), { target: { value: 'NV9' } })
     fireEvent.change(screen.getByLabelText(/Họ và Tên/), { target: { value: 'Phạm D' } })

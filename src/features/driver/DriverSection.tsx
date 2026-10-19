@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useModuleEnabled } from '../../app/useModuleEnabled'
+import { useAuthStore } from '../../shared/auth/authStore'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection, SectionHeader } from '../../shared/ui/Section'
 import { DeleteDriverModal } from './components/DeleteDriverModal'
@@ -8,7 +9,7 @@ import { DriverGrid } from './components/DriverGrid'
 import { FaceEventsTab } from './components/FaceEventsTab'
 import { FaceImageLightbox } from './components/FaceImageLightbox'
 import { FaceServiceBanner } from './components/FaceServiceBanner'
-import { initDriver } from './init'
+import { initDriver, onDriverSectionVisibility } from './init'
 import { filterDrivers } from './lib'
 import { useDeleteDriverMutation, type DeleteDriverInput } from './mutations'
 import { loadDrivers } from './queries'
@@ -55,6 +56,14 @@ export function DriverSection({ hidden }: { hidden: boolean }) {
   useEffect(() => {
     if (enabled) initDriver()
   }, [enabled])
+
+  // MutationObserver của bản gốc: #driver-section hiển thị = app đang hiện và route là driver
+  const view = useAuthStore((s) => s.view)
+  const visible = enabled && !hidden && view === 'app'
+  useEffect(() => {
+    onDriverSectionVisibility(visible)
+    return () => onDriverSectionVisibility(false)
+  }, [visible])
 
   // nút .btn-driver-delete: xác nhận -> xóa (driver.js:1075-1148)
   const onDelete = async (args: DeleteDriverInput) => {

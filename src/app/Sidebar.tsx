@@ -2,7 +2,7 @@ import { useState, type FocusEvent, type TransitionEvent } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAuthStore } from '../shared/auth/authStore'
 import { Button } from '../shared/ui/Button'
-import { notifySectionShown, type AppRoute } from './useActiveSection'
+import { notifyNavItemClick, notifySectionShown, type AppRoute } from './useActiveSection'
 
 // <aside class="sidebar"> (index.html:560-627). Không có mục event-server, giống bản gốc.
 const NAV_ITEMS: ReadonlyArray<{ target: AppRoute; icon: string; text: string }> = [
@@ -109,7 +109,10 @@ export function Sidebar({ active, onLogoutClick }: { active: AppRoute | 'login';
               className={navItemClass(isActive, expanded)}
               data-target={item.target}
               aria-current={isActive ? 'page' : undefined}
-              onClick={() => void navigate({ to: `/${item.target}` })}
+              onClick={() => {
+                void navigate({ to: `/${item.target}` })
+                notifyNavItemClick(item.target)
+              }}
             >
               <i
                 className={`fa-solid ${item.icon} nav-short hidden size-8 shrink-0 items-center justify-center rounded-[10px] font-bold tracking-[0.5px] min-[769px]:inline-flex ${

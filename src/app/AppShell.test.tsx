@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderApp, type AppResult } from '../test/renderWithProviders'
 import { useAuthStore } from '../shared/auth/authStore'
-import { onSectionShown } from './useActiveSection'
+import { onNavItemClick, onSectionShown } from './useActiveSection'
 
 vi.mock('../features/playback/init', () => ({ playbackInit: vi.fn() }))
 
@@ -65,6 +65,27 @@ describe('AppShell', () => {
       expect(window.history.length).toBe(before + 1)
       await waitFor(() => expect(cb).toHaveBeenCalledTimes(1))
       expect(document.getElementById('map-section')).not.toHaveAttribute('hidden')
+      expect(other).not.toHaveBeenCalled()
+    } finally {
+      off()
+      offOther()
+    }
+  })
+
+  it('onNavItemClick: gọi đồng bộ ở mọi lần click nav, kể cả click lại route đang active', async () => {
+    const cb = vi.fn()
+    const off = onNavItemClick('vehicle', cb)
+    const other = vi.fn()
+    const offOther = onNavItemClick('map', other)
+    try {
+      app = renderApp({ hash: '#vehicle' })
+      const nav = await screen.findByRole('button', { name: /Quản lý phương tiện/ })
+      await waitFor(() => expect(nav).toHaveAttribute('aria-current', 'page'))
+      fireEvent.click(nav)
+      expect(cb).toHaveBeenCalledTimes(1)
+      expect(window.location.hash).toBe('#vehicle')
+      fireEvent.click(nav)
+      expect(cb).toHaveBeenCalledTimes(2)
       expect(other).not.toHaveBeenCalled()
     } finally {
       off()
