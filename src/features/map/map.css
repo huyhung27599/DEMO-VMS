@@ -1,0 +1,11 @@
+/* map.js:68-77 — style chèn vào <head> lúc tải script: xóa nền mặc định của divIcon */
+.custom-nav-icon {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Popup marker dùng var(--font-main) (styles2.css:16) */
+:root {
+  --font-main: "Inter", sans-serif;
+}

@@ -1,0 +1,30 @@
+import { create } from 'zustand'
+
+// Trạng thái dùng chung của MapModule (map.js:3-11) mà React cần đọc.
+export type MapState = {
+  /** `selectedVehicleId` — xe đang focus (liveview gọi focusOnVehicle) */
+  followTarget: string | null
+  /** `followMode` — mặc định bật; dragstart trên bản đồ tắt */
+  followMode: boolean
+  /** `_pollTimer !== null` — startTracking bật, stopTracking tắt */
+  trackingActive: boolean
+  /** `isInitialized` của MapModule (ẩn placeholder trong container) */
+  isInitialized: boolean
+  /** Khung "icon-settings" vừa bật/tắt bằng toggleIconSettings đang mở */
+  iconSettingsOpen: boolean
+}
+
+const INITIAL: MapState = {
+  followTarget: null,
+  followMode: true, // Luôn bật follow mặc định
+  trackingActive: false,
+  isInitialized: false,
+  iconSettingsOpen: false,
+}
+
+export const useMapStore = create<MapState>(() => ({ ...INITIAL }))
+
+/** Chỉ dùng trong test. */
+export function resetMapStore(): void {
+  useMapStore.setState({ ...INITIAL })
+}

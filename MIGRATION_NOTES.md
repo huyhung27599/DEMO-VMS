@@ -179,3 +179,32 @@ Bản gốc giữ nguyên / ghi chú:
 - `pushFaceAlert` không được gọi ở đâu trong bản gốc (code chết). Bản port giữ phần tạo alert + `window.dispatchEvent('ai-face-alert')`; phần chèn trực tiếp `<li>` vào `#ai-alert-list` và tăng `#ai-badge` của liveview không port (liveview chưa có; nếu cần thì lắng nghe event).
 - Flatpickr khởi tạo trong effect của tab sự kiện (mount lúc tải trang, như DOMContentLoaded); `now`/`startDay` tính lúc đó. `DatePickerController.toApiDateTime` dùng instance Flatpickr, fallback như bản gốc khi không có instance.
 - Các nút xóa: bản gốc render lại cả lưới sau khi xóa thành công (reset trạng thái spinner của các nút khác đang xóa); bản port chỉ bỏ trạng thái của thẻ vừa xóa.
+
+### Task 9 — bản đồ
+
+Ánh xạ:
+
+- `frontend/js/map.js:addTerritorialOverlays` → `src/shared/map/territorial.ts:addTerritorialOverlays` (+ CSS nhãn `styles2.css:3624-3718` → `src/shared/map/map.css`)
+- `map.js:_addTileLayerWithFallback` + `CUSTOM_TILE_URL/FALLBACK_TILE_URL/*_ATTR` → `src/shared/map/tiles.ts:addTileLayerWithFallback` (trả về lớp tile riêng)
+- `map.js` `<style>` `.custom-nav-icon` chèn vào `<head>` → `src/features/map/map.css`
+- `map.js:init` → `src/features/map/mapController.ts:init` (+ `createMap`, `attach`); gọi từ effect của `MapSection.tsx` khi `useModuleEnabled('map')` (main.js:57-59)
+- `map.js:_updateFollowBtn` → không port (nút `#map-follow-btn` không có trong index.html); `_disableFollow` → `mapController.ts:disableFollow`
+- `map.js:startTracking/stopTracking/_fetchOnce` → `mapController.ts:startTracking/stopTracking/fetchOnce` + `src/features/map/queries.ts:vehiclePositionsQueryOptions` (refetchInterval 1500, `enabled: useModuleEnabled('map') && trackingActive`)
+- `map.js:_panToFollowTarget` → `mapController.ts:panToFollowTarget`; `_animateMarker` → `animateMarker`; `updateMapMarkers`, `centerMapOnAllMarkers`, `focusOnVehicle`, `handleResize`, `toggleIconSettings`, `saveIcon` → `mapController.ts:<cùng tên>` (+ object `mapController`)
+- `map.js:_lerp/_ease/ANIM_DURATION/_getCustomIcon/_setCustomIcon/getTrackingIconSvg/_darkenColor/_lightenColor` → `src/features/map/lib.ts:lerp/ease/ANIM_DURATION/getCustomIcon/setCustomIcon/getTrackingIconSvg/darkenColor/lightenColor`
+- Biến module `followMode/selectedVehicleId/_pollTimer/isInitialized` → phản chiếu ở `src/features/map/store.ts:useMapStore` (`followMode`, `followTarget`, `trackingActive`, `isInitialized`, `iconSettingsOpen`)
+- `frontend/index.html:1333-1344` (#map-section) → `src/features/map/MapSection.tsx`; `#liveview-map` (index.html:927-931) + `.map-container/.map-placeholder` (styles2.css:1737-1754, 1205-1211) → `src/features/map/MapContainer.tsx` (đặt tạm trong `LiveviewSection.tsx`, task liveview chuyển vào `#rtab-map-view`)
+- `main.js:84-97` (sidebar) và `main.js:160-163` (switchSection map/liveview) gọi `MapModule.handleResize` → `onSectionShown('map' | 'liveview', mapController.handleResize)` trong `MapSection.tsx` (Sidebar gọi `notifySectionShown('map')`)
+
+Bản gốc giữ nguyên / ghi chú:
+
+- Đăng xuất: lần `_fetchOnce` kế tiếp thấy chưa đăng nhập -> `stopTracking()` (xóa interval). Đăng nhập lại KHÔNG chạy lại vì `init()` có guard `isInitialized`: vị trí xe trên cả hai bản đồ đứng yên tới khi tải lại trang. Bản port: `trackingActive = false` mãi mãi -> query tắt. (Khác "Review Focus 5" chung — đây là hành vi riêng của map.js.)
+- `#map-follow-btn` không tồn tại: follow mặc định bật, `dragstart` trên một trong hai bản đồ tắt follow vĩnh viễn (không có cách bật lại); `_panToFollowTarget` là code chết.
+- `MapModule.focusOnLocation` KHÔNG tồn tại trong bản gốc (liveview.js:802 kiểm tra rồi bỏ qua). `mapController.focusOnLocation(lat, lng)` là hàm rỗng để giữ hành vi đó.
+- `addTerritorialOverlays` fetch đường dẫn TUYỆT ĐỐI `'/hoangsa.geojson'`, `'/truongsa.geojson'`, `'/biendong.geojson'` như map.js:18-20 (brief ghi "tương đối" — theo code gốc). Ảnh marker dùng đường dẫn tương đối `img/markers/*.png` như bản gốc. Thuộc tính `color` của từng overlay không được dùng.
+- Tile fallback: sau lỗi tile thứ 3, MỖI lỗi tiếp theo của lớp tile riêng lại thêm một lớp CartoDB nữa (không có cờ "đã chuyển").
+- `getTrackingIconSvg`: `car`/`truck`/`navigation` luôn trả ảnh PNG, nên SVG sedan/xe tải không bao giờ dùng; mặc định `navigation` -> PNG. `defColor` tính nhưng không dùng (bỏ). `darkenColor/lightenColor` với chuỗi không phải hex trả `NaN` trong chuỗi màu.
+- `updateMapMarkers` chỉ vẽ xe online; `focusOnVehicle`/`saveIcon` vẽ lại từ `lastValidStatuses` (chỉ `fetchOnce` cập nhật). Khi đã chọn xe, các xe khác bị gỡ khỏi cả hai bản đồ. Nhãn popup `id="icon-settings-<uid>"` trùng nhau nếu popup cùng xe mở trên cả hai bản đồ — `getElementById` lấy cái đầu, như bản gốc.
+- Popup marker vẫn là chuỗi HTML (Leaflet) như bản gốc. `onclick="MapModule.toggleIconSettings('uid')"` / `saveIcon` (cần `window.MapModule`) được thay bằng `data-map-action` + `data-uid` (escape) và một listener `click` (capture) trên container mỗi bản đồ. Biểu tượng bảng màu là `<i>` không focus được bằng bàn phím (như bản gốc).
+- Lần gọi tức thì của `startTracking` là lần fetch khi query được bật (sau render kế tiếp, không đồng bộ trong `init`). `refetchInterval` của TanStack không chạy chồng một lần fetch đang dở (setInterval gốc có thể chạy chồng nếu API chậm > 1,5 s).
+- Bản gốc xóa `innerHTML` của container rồi tạo bản đồ; bản port để React gỡ `.map-placeholder` khi `isInitialized` (Leaflet gắn vào chính container React render, className giữ cố định).

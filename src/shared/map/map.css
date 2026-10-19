@@ -1,0 +1,89 @@
+/* Nhãn lãnh thổ trên bản đồ Leaflet — chép từ styles2.css:3624-3718 */
+.leaflet-tooltip.sea-label,
+.leaflet-tooltip.gulf-label,
+.leaflet-tooltip.island-label,
+.leaflet-tooltip.island-label-wrapper {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.leaflet-tooltip.sea-label::before,
+.leaflet-tooltip.gulf-label::before,
+.leaflet-tooltip.island-label::before,
+.leaflet-tooltip.island-label-wrapper::before {
+  display: none !important;
+}
+
+.map-text {
+  display: inline-block;
+  white-space: nowrap;
+  font-family: "Inter", sans-serif;
+  outline: none;
+}
+
+.rotate-n45 {
+  transform: rotate(-45deg);
+}
+
+.rotate-n55 {
+  transform: rotate(-55deg);
+}
+
+.shadow-blue {
+  color: #ffffff;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-shadow:
+    -1px -1px 0 #579dc5,
+    1px -1px 0 #579dc5,
+    -1px 1px 0 #579dc5,
+    1px 1px 0 #579dc5,
+    -2px -2px 0 #579dc5,
+    2px -2px 0 #579dc5,
+    -2px 2px 0 #579dc5,
+    2px 2px 0 #579dc5,
+    0px 0px 4px rgba(87, 157, 197, 0.8);
+}
+
+.sea-label .map-text.rotate-n45 {
+  font-size: 11.5px;
+  letter-spacing: 4px;
+}
+
+.gulf-label .map-text {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.island-text {
+  text-align: center;
+  color: #f78f45;
+  text-shadow:
+    -1px -1px 0 #ffffff,
+    1px -1px 0 #ffffff,
+    -1px 1px 0 #ffffff,
+    1px 1px 0 #ffffff,
+    -1.5px -1.5px 0 #ffffff,
+    1.5px -1.5px 0 #ffffff,
+    -1.5px 1.5px 0 #ffffff,
+    1.5px 1.5px 0 #ffffff,
+    0px 0px 3px rgba(255, 255, 255, 1);
+  font-weight: 700;
+  font-style: italic;
+}
+
+.island-text .igl-main {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.3px;
+}
+
+.island-text .igl-sub {
+  display: block;
+  font-size: 8.5px;
+  margin-top: 1px;
+}
