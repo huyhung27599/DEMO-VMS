@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderApp, type AppResult } from '../test/renderWithProviders'
 import { useAuthStore } from '../shared/auth/authStore'
 import { onSectionShown } from './useActiveSection'
@@ -93,6 +93,48 @@ describe('AppShell', () => {
     expect(document.getElementById('logout-confirm-modal')).toHaveAttribute('aria-hidden', 'true')
     fireEvent.click(document.getElementById('logout-btn')!)
     expect(document.getElementById('logout-confirm-modal')).toHaveAttribute('aria-hidden', 'false')
+  })
+
+  it('click chuột vào nav rồi rời chuột: sidebar co lại (chỉ giãn theo :hover / focus bàn phím)', async () => {
+    app = renderApp({ hash: '#dashboard' })
+    await waitFor(() => expect(useAuthStore.getState().view).toBe('app'))
+    const aside = document.querySelector('aside') as HTMLElement
+    const nav = screen.getByRole('button', { name: /Quản lý tài xế/ })
+    // focus do click chuột: trình duyệt không khớp :focus-visible
+    const orig = Element.prototype.matches
+    const spy = vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, sel: string) {
+      return sel === ':focus-visible' ? false : orig.call(this, sel)
+    })
+    try {
+      fireEvent.mouseEnter(aside)
+      expect(aside.className).not.toContain('min-[769px]:w-[76px]')
+      act(() => nav.focus())
+      fireEvent.click(nav)
+      fireEvent.mouseLeave(aside)
+      expect(document.activeElement).toBe(nav)
+      expect(aside.className).toContain('min-[769px]:w-[76px]')
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('focus bàn phím (:focus-visible) giãn sidebar, blur ra ngoài thì co lại', async () => {
+    app = renderApp({ hash: '#dashboard' })
+    await waitFor(() => expect(useAuthStore.getState().view).toBe('app'))
+    const aside = document.querySelector('aside') as HTMLElement
+    const nav = screen.getByRole('button', { name: /Quản lý tài xế/ })
+    const orig = Element.prototype.matches
+    const spy = vi.spyOn(Element.prototype, 'matches').mockImplementation(function (this: Element, sel: string) {
+      return sel === ':focus-visible' ? true : orig.call(this, sel)
+    })
+    try {
+      act(() => nav.focus())
+      expect(aside.className).not.toContain('min-[769px]:w-[76px]')
+      act(() => nav.blur())
+      expect(aside.className).toContain('min-[769px]:w-[76px]')
+    } finally {
+      spy.mockRestore()
+    }
   })
 
   it("sidebar mouseenter/mouseleave -> callback 'map' sau 220 ms; transitionend(width) -> ngay", async () => {

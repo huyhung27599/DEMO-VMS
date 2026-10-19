@@ -4,7 +4,14 @@ import { QueryClient } from '@tanstack/react-query'
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: false, refetchOnWindowFocus: false, refetchOnReconnect: false, staleTime: 0 },
+      queries: {
+        retry: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        // setInterval của bản gốc không dừng khi tab bị ẩn
+        refetchIntervalInBackground: true,
+        staleTime: 0,
+      },
       mutations: { retry: false },
     },
   })

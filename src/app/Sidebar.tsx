@@ -16,6 +16,15 @@ const NAV_ITEMS: ReadonlyArray<{ target: AppRoute; icon: string; text: string }>
   { target: 'settings', icon: 'fa-gear', text: 'Cài đặt' },
 ]
 
+function isFocusVisible(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible')
+  } catch {
+    // trình duyệt/jsdom không hỗ trợ :focus-visible -> coi như không phải focus bàn phím
+    return false
+  }
+}
+
 // main.js:84-97 — sidebar co/giãn làm đổi kích thước map (Leaflet cần invalidateSize)
 function triggerMapResize() {
   notifySectionShown('map')
@@ -55,6 +64,11 @@ export function Sidebar({ active, onLogoutClick }: { active: AppRoute | 'login';
   const onTransitionEnd = (e: TransitionEvent<HTMLElement>) => {
     if (e.propertyName === 'width') triggerMapResize()
   }
+  // Chỉ giãn khi focus bằng bàn phím (:focus-visible). Click chuột cũng focus nút nav,
+  // nếu giãn theo mọi focus thì sidebar không co lại khi rời chuột (bản gốc chỉ dùng :hover).
+  const onFocus = (e: FocusEvent<HTMLElement>) => {
+    if (isFocusVisible(e.target)) setFocusWithin(true)
+  }
   const onBlur = (e: FocusEvent<HTMLElement>) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusWithin(false)
   }
@@ -71,7 +85,7 @@ export function Sidebar({ active, onLogoutClick }: { active: AppRoute | 'login';
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onTransitionEnd={onTransitionEnd}
-      onFocus={() => setFocusWithin(true)}
+      onFocus={onFocus}
       onBlur={onBlur}
     >
       <div className="border-b border-border p-6 max-[768px]:border-r max-[768px]:border-b-0 max-[768px]:px-4 max-[768px]:py-3">

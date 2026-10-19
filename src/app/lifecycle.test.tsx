@@ -94,7 +94,7 @@ function VehicleProbe() {
     queryFn: probeFn,
     enabled,
     refetchInterval: 1000,
-    refetchIntervalInBackground: true,
+    // không đặt refetchIntervalInBackground: expectPolling chứng minh default của QueryClient
   })
   return null
 }

@@ -71,4 +71,5 @@
 - `#Dashboard` (khác hoa/thường) lúc tải trang: bản gốc đổi thành `#dashboard`; router coi là cùng location nên URL giữ `#Dashboard` (section dashboard vẫn hiện). Route khác (vd. `#DRIVER`) giữ nguyên URL như bản gốc.
 - `switchSection` gốc có thể chạy hai lần sau đăng nhập (showApp + hashchange); bản port gọi `onSectionShown` một lần mỗi lần đổi section và hủy timer 150 ms nếu section đổi trước khi timer chạy.
 - `legacyHashHistory` ghi `history.pushState/replaceState` đồng bộ (createBrowserHistory gom bằng microtask).
-- Sidebar giãn rộng cả khi focus bàn phím nằm trong sidebar (`:focus-within`), ngoài `:hover` như bản gốc, để nhãn menu và nút "Đăng xuất" nhìn thấy khi dùng bàn phím. Nút ẩn/hiện mật khẩu là `<button aria-label>` thay cho `<svg>` click được. Nút đóng modal có `aria-label="Đóng"`.
+- Sidebar giãn rộng cả khi focus BÀN PHÍM (`:focus-visible`) nằm trong sidebar, ngoài `:hover` như bản gốc (focus do click chuột không giữ sidebar mở — rời chuột là co lại như bản gốc), để nhãn menu và nút "Đăng xuất" nhìn thấy khi dùng bàn phím. Nút ẩn/hiện mật khẩu là `<button aria-label>` thay cho `<svg>` click được. Nút đóng modal có `aria-label="Đóng"`.
+- `createQueryClient()` đặt mặc định `refetchIntervalInBackground: true` cho mọi query (setInterval của bản gốc không dừng khi tab bị ẩn); query polling không cần tự đặt cờ này nữa.
