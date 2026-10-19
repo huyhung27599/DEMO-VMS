@@ -208,3 +208,42 @@ Bản gốc giữ nguyên / ghi chú:
 - Popup marker vẫn là chuỗi HTML (Leaflet) như bản gốc. `onclick="MapModule.toggleIconSettings('uid')"` / `saveIcon` (cần `window.MapModule`) được thay bằng `data-map-action` + `data-uid` (escape) và một listener `click` (capture) trên container mỗi bản đồ. Biểu tượng bảng màu là `<i>` không focus được bằng bàn phím (như bản gốc).
 - Lần gọi tức thì của `startTracking` là lần fetch khi query được bật (sau render kế tiếp, không đồng bộ trong `init`). `refetchInterval` của TanStack không chạy chồng một lần fetch đang dở (setInterval gốc có thể chạy chồng nếu API chậm > 1,5 s).
 - Bản gốc xóa `innerHTML` của container rồi tạo bản đồ; bản port để React gỡ `.map-placeholder` khi `isInitialized` (Leaflet gắn vào chính container React render, className giữ cố định).
+
+### Task 10 — liveview (luồng video, danh sách xe, tab)
+
+Ánh xạ:
+
+- `frontend/js/liveview.js:init` → `src/features/liveview/actions.ts:initLiveview` (gọi từ effect của `LiveviewSection.tsx` khi `useModuleEnabled('liveview')`, main.js:51-53)
+- `liveview.js:loadDriverMapping` → `src/features/liveview/queries.ts:liveviewDriverMappingQueryOptions` (key `['liveview','driverMapping']`) + `loadDriverMapping` (fetchQuery trên `queryClient`) + `getDriverMapping` (biến `driverMapping` cho Task 11)
+- `liveview.js:startKeepalive/stopKeepalive/reloadActiveIframe/KEEPALIVE_INTERVAL_MS` + listener `visibilitychange` (166-171) → `src/features/liveview/streamController.ts:startKeepalive/stopKeepalive/reloadActiveIframe/onVisibilityChange`, `lib.ts:KEEPALIVE_INTERVAL_MS`
+- `liveview.js:initRightPanelTabs` (phần tab) → `actions.ts:onRightTabClick` + nút `.right-tab-btn` trong `LiveviewSection.tsx`; phần `#refresh-ai-events` / `#ai-event-search` → Task 11 (`components/AiEventsPanel.tsx` đang là markup tĩnh)
+- `liveview.js:initDropdownToggles` → `actions.ts:onDropdownButtonClick/closeDropdown` + `components/SosDropdown.tsx`
+- listener `#refresh-liveview` / `#liveview-vehicle-select` / `#company-select-inner` (init 187-219) → `actions.ts:onRefreshClick/onVehicleChange/onCompanyChange`
+- `liveview.js:initTabs` → `actions.ts:onLeftTabClick` + `initLiveview` (đặt `leftTab = 'camera'`)
+- `liveview.js:initCompanyDropdown` → `actions.ts:initCompanyDropdown` + `components/CompanyDropdown.tsx`
+- `liveview.js:loadVehicleDropdown` → `actions.ts:loadVehicleDropdown` (API qua `queries.ts:liveviewVehiclesQueryOptions`) + `components/VehicleList.tsx`
+- `liveview.js:renderVehicleStreams` → `actions.ts:renderVehicleStreams` + `components/StreamWall.tsx`
+- `liveview.js:renderUnifiedPlayer` → `actions.ts:renderUnifiedPlayer/onTileClick` (DOM: `components/UnifiedPlayer.tsx`; tạo iframe: `streamController.ts:createUnifiedPlayerIframe`)
+- `liveview.js:pickFirst/normalizeDriverInfo/extractUrlFromLiveHtmlResponse` → `src/features/liveview/lib.ts:<cùng tên>`
+- `liveview.js:resolveUnifiedPlayerUrl/playHlsStream` → `streamController.ts:<cùng tên>`
+- biến module `vehiclesCache`, DOM `#video-grid` (+ class `is-unified`), option/giá trị hai select, class `active` của tab/panel → `src/features/liveview/store.ts:useLiveviewStore` (`vehiclesCache`, `grid`, `gridUnified`, `companyOptions/companyValue`, `vehicleOptions/vehicleValue`, `leftTab`, `rightTab`, `openDropdown`)
+- Điểm nối Task 11 (đúng chỗ gọi của bản gốc): `startAiAlertPolling` (init), `pollAiAlerts` (sau loadVehicleDropdown thành công), `loadApiAiEvents` (click tab `ai-events`), `loadDriverInfoForWall` (renderUnifiedPlayer), `stopDriverInfoTimers` (cuối stopKeepalive) → `src/features/liveview/task11Hooks.ts` (hiện rỗng)
+- `index.html:844-957` (#liveview-section) + `styles2.css:693-695, 836-1211, 1529-1630, 1941-1968, 2084, 2127, 3762-3801` + `responsive-desktop.css:141-148` → `LiveviewSection.tsx`, `components/*`, `liveview.css`; `#liveview-map` (MapContainer) chuyển vào `#rtab-map-view`, luôn mount, tab ẩn bằng class `hidden`
+
+Bản gốc giữ nguyên / ghi chú:
+
+- `init()` của bản gốc chỉ đặt `isInitialized = true` ở cuối (sau `await loadDriverMapping()`); bản port chặn tái nhập ngay đầu hàm (StrictMode). Khác biệt chỉ lộ ra nếu showApp chạy hai lần trong lúc fetch mapping. Trước khi init xong, mọi click/change trong section không làm gì (listener chưa gắn), như bản gốc.
+- `loadDriverMapping` fetch thẳng `${BASE_URL}driver/mapping` (không header). Không có `useQuery` tự fetch: thời điểm "enabled" chính là lúc init chạy (một lần). Danh sách xe cũng không có `useQuery` mount — chỉ `loadVehicleDropdown()` (đổi nhóm / "Làm mới") gọi `fetchQuery` (staleTime 0). Hai lần gọi chồng nhau trong cùng một RTT bị TanStack gộp làm một (bản gốc gọi hai lần) — chỉ xảy ra khi người dùng thao tác hai lần trước khi API trả về.
+- `extractUrlFromLiveHtmlResponse`: kiểm tra `isValidExternalUrl` trên CẢ chuỗi trước khi tìm URL bằng regex, nên một chuỗi HTML có chứa `fleetscontrol.com` / `808gps` / `RealPlayVideo.html` bị trả nguyên văn (không phải URL); `resolveUnifiedPlayerUrl` thấy không bắt đầu bằng `http` nên dùng URL RealPlay dự phòng. Nhánh regex chỉ chạy khi cả chuỗi bị loại (bắt đầu bằng `/`, chứa `localhost`...). Giữ nguyên.
+- `playHlsStream` và `normalizeDriverInfo` là code chết trong bản gốc (không ai gọi). `playHlsStream` giữ chữ ký gốc `(deviceId, channel, videoId, vehicleName)` (tìm `#videoId`, `#videoId-loader`, `#videoId-status`) thay vì `(video, url)` ghi trong brief, để giữ cả phần gọi API/fallback. Instance `Hls` không bao giờ `destroy()` (bản gốc khai báo `_activeHlsPlayers` nhưng không dùng).
+- `renderVehicleStreams` gọi `AppHelpers.showLoader()`/`hideLoader()` bao quanh phần đồng bộ (renderUnifiedPlayer không được await) → loader không bao giờ kịp hiển thị; không port (không có `#global-loader`).
+- Đổi xe khi player trước chưa xong: lời gọi cũ vẫn chạy tiếp, khi xong vẫn `startKeepalive` cho iframe của nó (không nằm trong DOM) và chiếm keepalive của xe mới. Bỏ chọn nhóm quản lý / đổi nội dung grid không dừng keepalive: iframe đã gỡ vẫn được ping và reload. Giữ nguyên.
+- Iframe player vẫn được tạo bằng `document.createElement('iframe')` (src, style, allow, referrerPolicy như bản gốc) rồi gắn vào một `<div class="contents">` trong `.video-tile`; "Connecting..." / "Stream Not Available" do React render.
+- `≤1024px`: `.liveview-right-panel` luôn `display:flex`, `.liveview-left-panel` không active vẫn hiển thị (block) → tab "Camera / Bản đồ" chỉ đổi trạng thái nút/class, không ẩn panel nào. Click video tile ở `innerWidth <= 1024` chuyển tab sang "Bản đồ" (+ `handleResize`). Giữ nguyên.
+- Tab trái "Bản đồ" gọi `handleResize` ngay; tab phải "Bản đồ giám sát" gọi sau `setTimeout(100)`; click lại tab đang active vẫn gọi.
+- `.video-wall-hint` chữ trắng 75% trên nền `#eeeeee` (gần như không đọc được) — giữ nguyên màu.
+- SOS: chỉ có bật/tắt dropdown; danh sách, badge (`display:none`, "0") và nút "Xóa tất cả" không có JS xử lý → tĩnh. `#ai-alert-list`, `#ai-badge`, `#clear-ai-btn` KHÔNG có trong index.html nên `pollAiAlerts` của bản gốc luôn thoát sớm (Task 11 lưu ý).
+- Dropdown nhóm quản lý dựng một lần lúc init với username lúc đó (`|| 'admin'`); đăng nhập lại bằng tài khoản khác vẫn giữ username cũ.
+- Tên xe (`sanitizeHTML(nm)` chèn qua innerHTML) và tên/ID thiết bị hiển thị qua JSX — cùng chuỗi hiển thị (R13).
+- `useLiveviewStore.leftTab` có thêm giá trị `null` (trước `initTabs`, chưa panel nào `active`; nút Camera vẫn active theo index.html). Brief ghi `selectedDeviceIds`: thay bằng selector `selectSelectedDeviceIds` suy ra từ `grid` (dùng với `useShallow`).
+- `.video-tile` là `div` có `onClick` (không focus được bằng bàn phím) như bản gốc; tile chứa iframe nên không đổi thành `<button>`.

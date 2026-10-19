@@ -1,0 +1,93 @@
+/*
+ * styles2.css:876-894 + 3762-3801 — .header-filter-select của liveview (#company-select-inner,
+ * #liveview-vehicle-select). Bản gốc dùng !important (đè cả padding-left:32px inline) nên giữ dạng CSS thường.
+ */
+.liveview-filter-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.05rem;
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 2.5rem 0 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-main);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  cursor: pointer;
+}
+
+.liveview-filter-select:hover {
+  border-color: rgba(42, 157, 216, 0.4);
+  background-color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.liveview-filter-select:focus {
+  border-color: var(--color-primary);
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(42, 157, 216, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* styles2.css:952-999 — chuông SOS rung khi hover */
+.liveview-sos-btn:hover i.fa-bell {
+  color: var(--color-danger);
+  animation: liveview-ring 1s ease infinite;
+}
+
+@keyframes liveview-ring {
+  0% {
+    transform: rotate(0);
+  }
+  10% {
+    transform: rotate(15deg);
+  }
+  20% {
+    transform: rotate(-10deg);
+  }
+  30% {
+    transform: rotate(10deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+  60% {
+    transform: rotate(-5deg);
+  }
+  70% {
+    transform: rotate(0);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* styles2.css:1028-1055 — .icon-dropdown hiện ra */
+.liveview-icon-dropdown {
+  animation: liveview-fade-in-down 0.2s ease;
+}
+
+@keyframes liveview-fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
