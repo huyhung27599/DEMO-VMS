@@ -13,6 +13,7 @@
 - `frontend/js/api.js:refreshCsrfToken` → `src/shared/api/client.ts:refreshCsrfToken`
 - `frontend/js/api.js:clearSecurityContext` → `src/shared/api/client.ts:clearSecurityContext`
 - `frontend/js/api.js:fetchApi` → `src/shared/api/client.ts:fetchApi (+ handleSessionExpired, registerAuthBridge replaces AuthModule/#login-container check)`
+- `frontend/js/api.js:login … uninstallDevice (all 58 endpoint functions, lines 175-604) + return {}` → `src/shared/api/endpoints.ts:<same names> + api` (api keys == original return block at api.js:606; no `fetch` direct calls exist in the original endpoints, so none ported; `getSecurityContext` intentionally absent)
 
 ## Bug bản gốc giữ nguyên
 
