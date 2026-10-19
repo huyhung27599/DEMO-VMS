@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Loose } from './lib'
+import type { JournalEntry, Loose } from './lib'
 
 // Trạng thái của #playback-section: biến module của playback.js (1-15) + DOM mà playback.js đọc/ghi trực tiếp.
 
@@ -55,6 +55,21 @@ export type ChannelTabsView = {
   streamType: string
 }
 
+/** #pb-stat-distance / maxspeed / duration / points (computeStats) */
+export type TrackStats = { distance: string; maxspeed: string; duration: string; points: string }
+
+/** Nội dung #pb-timeline-body (renderTimeline / renderTimelineEmpty — playback.js:1658-1740). */
+export type TimelineView =
+  /** index.html: "Lịch sử GPS hiển thị sau khi tìm kiếm" */
+  | { kind: 'initial' }
+  /** renderTimelineEmpty: "Không có dữ liệu GPS" */
+  | { kind: 'empty' }
+  /**
+   * renderTimeline: `places[i]` = textContent mới của `.pb-tl-place` thứ i (enrichTimelinePlaces);
+   * `active` = chỉ số `.pb-timeline-item` có class `active-point`.
+   */
+  | { kind: 'entries'; entries: JournalEntry[]; places: Record<number, string>; active: number | null }
+
 export type PlaybackState = {
   /** bindEvents() đã chạy (listener #pb-search-btn chỉ có sau init) */
   initialized: boolean
@@ -91,6 +106,20 @@ export type PlaybackState = {
   rightTab: string | null
   /** toggleRightPanel: .pb-main-layout.pb-right-collapsed */
   rightCollapsed: boolean
+  /** initMap đã chạy: `.pb-map-placeholder-text` display:none */
+  trackMapInitialized: boolean
+  /** renderMapLegend(parkCount): #pb-track-legend; null = chưa có / đã gỡ (clearTrack) */
+  trackLegend: number | null
+  /** #pb-track-play-btn: icon fa-stop (start/stopTrackAnimation) */
+  trackAnimating: boolean
+  /** updateTrackMapFullscreenBtn: title + icon của #pb-map-fullscreen-btn */
+  trackMapFsActive: boolean
+  /** #pb-track-card.pb-track-fs-mode (fullscreen dạng overlay) */
+  trackFsMode: boolean
+  timeline: TimelineView
+  /** #pb-timeline-count */
+  timelineCount: string
+  stats: TrackStats
 }
 
 const INITIAL: PlaybackState = {
@@ -117,6 +146,14 @@ const INITIAL: PlaybackState = {
   trackStatus: { text: 'Chưa có dữ liệu', active: false },
   rightTab: null,
   rightCollapsed: false,
+  trackMapInitialized: false,
+  trackLegend: null,
+  trackAnimating: false,
+  trackMapFsActive: false,
+  trackFsMode: false,
+  timeline: { kind: 'initial' },
+  timelineCount: '0 điểm',
+  stats: { distance: '--', maxspeed: '--', duration: '--', points: '--' },
 }
 
 export const usePlaybackStore = create<PlaybackState>(() => ({ ...INITIAL }))

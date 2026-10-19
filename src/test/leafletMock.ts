@@ -27,6 +27,20 @@ function evented() {
 
 export type FakeMap = ReturnType<typeof makeMap>
 export type FakeMarker = ReturnType<typeof makeMarker>
+export type FakePolyline = ReturnType<typeof makePolyline>
+
+function makePolyline(latlngs: unknown, options?: Record<string, unknown>) {
+  const layer = Object.assign(makeLayer(), {
+    latlngs,
+    options: { ...options },
+    setStyle: vi.fn((o: Record<string, unknown>) => {
+      Object.assign(layer.options, o)
+      return layer
+    }),
+    getBounds: vi.fn(() => ({ bounds: latlngs })),
+  })
+  return layer
+}
 
 function makeMap(el: HTMLElement | string, options?: unknown) {
   const ev = evented()
@@ -50,6 +64,10 @@ function makeMap(el: HTMLElement | string, options?: unknown) {
     panTo: vi.fn(),
     flyTo: vi.fn(),
     fitBounds: vi.fn(),
+    closePopup: vi.fn(),
+    /** bounds hiện tại: `contains` mặc định true (test đổi bằng mockReturnValue) */
+    bounds: { contains: vi.fn((ll: unknown) => ll !== undefined) },
+    getBounds: vi.fn((): { contains: (ll: unknown) => boolean } => map.bounds),
   }
   return map
 }
@@ -64,6 +82,8 @@ function makeLayer() {
     }),
     bindTooltip: vi.fn(() => layer),
     bindPopup: vi.fn(() => layer),
+    /** con được thêm bằng `x.addTo(layer)` (layerGroup) */
+    layers: [] as unknown[],
   }
   return layer
 }
@@ -72,6 +92,8 @@ function makeMarker(latlng: unknown, options?: { icon?: unknown }) {
   let pos = toLatLng(latlng)
   let popupContent: unknown = null
   let popupOpen = false
+  const element = document.createElement('div')
+  element.appendChild(document.createElement('div'))
   const popup = { setContent: vi.fn((c: unknown) => ((popupContent = c), popup)) }
   const marker = {
     options,
@@ -98,6 +120,9 @@ function makeMarker(latlng: unknown, options?: { icon?: unknown }) {
       return marker
     }),
     getPopup: vi.fn(() => (popupContent === null ? undefined : popup)),
+    element,
+    getElement: vi.fn(() => element),
+    setZIndexOffset: vi.fn(() => marker),
     isPopupOpen: vi.fn(() => popupOpen),
     openPopup: vi.fn(() => {
       popupOpen = true
@@ -116,6 +141,8 @@ export const created = {
   markers: [] as FakeMarker[],
   tileLayers: [] as Array<ReturnType<typeof makeLayer> & { url: string; options: unknown }>,
   geoJSON: [] as Array<{ data: unknown; options: unknown }>,
+  polylines: [] as FakePolyline[],
+  layerGroups: [] as Array<ReturnType<typeof makeLayer>>,
 }
 
 export function resetLeafletMock(): void {
@@ -123,6 +150,8 @@ export function resetLeafletMock(): void {
   created.markers.length = 0
   created.tileLayers.length = 0
   created.geoJSON.length = 0
+  created.polylines.length = 0
+  created.layerGroups.length = 0
 }
 
 const L = {
@@ -148,6 +177,17 @@ const L = {
     created.markers.push(m)
     return m
   }),
+  polyline: vi.fn((latlngs: unknown, options?: Record<string, unknown>) => {
+    const l = makePolyline(latlngs, options)
+    created.polylines.push(l)
+    return l
+  }),
+  layerGroup: vi.fn(() => {
+    const g = makeLayer()
+    created.layerGroups.push(g)
+    return g
+  }),
+  latLng: vi.fn((lat: number, lng: number) => ({ lat, lng })),
   featureGroup: vi.fn((layers: unknown[]) => ({ layers, getBounds: vi.fn(() => ({ bounds: layers })) })),
 }
 

@@ -39,3 +39,80 @@
     0 0 0 4px rgba(42, 157, 216, 0.12),
     0 2px 4px rgba(0, 0, 0, 0.02);
 }
+
+/*
+ * styles2.css:3148-3207 — fullscreen bản đồ hành trình (pseudo-class + !important) và nội dung popup
+ * Leaflet (chuỗi HTML của buildSpeedTimePopup). Tách :fullscreen / :-webkit-full-screen thành hai
+ * rule để trình duyệt không hiểu một pseudo-class không bỏ cả rule.
+ */
+.pb-track-card:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  background: #fff;
+  border-radius: 0;
+}
+
+.pb-track-card:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  background: #fff;
+  border-radius: 0;
+}
+
+.pb-track-card:fullscreen .pb-track-map {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.pb-track-card:-webkit-full-screen .pb-track-map {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* Fallback khi trình duyệt không hỗ trợ requestFullscreen (hoặc bị chặn) */
+.pb-track-card.pb-track-fs-mode {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 10050 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background: #fff;
+  box-shadow: none;
+}
+
+.pb-track-card.pb-track-fs-mode .pb-track-map {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+.pb-track-fs-body-lock {
+  overflow: hidden !important;
+}
+
+.pb-track-popup {
+  text-align: center;
+  line-height: 1.35;
+  min-width: 72px;
+  padding: 2px 4px;
+}
+
+.pb-track-popup-time {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #1e293b;
+}
+
+.pb-track-popup-speed {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 2px;
+}

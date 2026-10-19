@@ -309,4 +309,36 @@ Bản gốc giữ nguyên / ghi chú:
 - Probe `fleet-media-proxy`: `clearTimeout` chỉ chạy khi `fetch` trả về; khi `fetch` lỗi, timer abort 10 s / 8 s vẫn chạy (vô hại) — giữ nguyên.
 - Nút "Tìm kiếm" không bị disable khi đang tìm (bấm nhiều lần chạy song song; lần xong đầu tiên trả nút về "Tìm kiếm") — `searching` là boolean như class `loading` gốc. Class `.loading` không có CSS.
 - Thông báo lỗi động (`e.message`, `errTitle/errDetail`, `devId`, `pUrl`) và tên xe (`sanitizeHTML` → innerHTML) hiển thị qua JSX — chuỗi được escape (R13).
-- Task 12 chưa có GPS: sau tìm kiếm trạng thái giữ "Đang tải..." cho tới khi Task 13 thay `loadGpsTrack`.
+- (Task 12) `loadGpsTrack` là chỗ giữ — đã được Task 13 thay bằng bản port đầy đủ.
+
+### Task 13 — playback: hành trình GPS, địa điểm, bản đồ, nhật ký, thống kê, fullscreen
+
+Ánh xạ:
+
+- `playback.js:fetchAllTrackRows/loadGpsTrack/renderTimeline/renderTimelineEmpty/computeStats` → `src/features/playback/track.ts:<cùng tên>`; listener click `.pb-timeline-item` → `track.ts:onTimelineItemClick`
+- `playback.js:_timelinePlaceSeq/_geocodeCache/reverseGeocodeCached/enrichTimelinePlaces` → `src/features/playback/geocode.ts:nextTimelinePlaceSeq/reverseGeocodeCached/enrichTimelinePlaces` (cache = `queryClient.fetchQuery`, key `['playback','geocode', lat.toFixed(4), lng.toFixed(4)]`, `staleTime`/`gcTime: Infinity`)
+- `playback.js:_map/_trackLayer/_markerLayer/_startMarker/_endMarker/_parkMarkers/_mapJournalFocused/_highlightedMarker/_animMarker/_animTimer/_animIndex/_trackPoints/_trackMapOverlayFs` → biến module của `src/features/playback/trackMapController.ts` (`_map` còn được đăng ký qua `videoController.setTrackMap` để `handleResize`/`switchRightTab`/onSearch invalidate)
+- `playback.js:TRACK_POPUP_OPTS/buildSpeedTimePopup/openMarkerPopupSoon/dotIcon/clearMarkerHighlight/highlightMarker/getJournalEntryLatLng/focusMapOnJournalEntry/movingDotIcon/renderMapLegend/getOsrmMatchedRoute/renderTrackOnMap/_addTileLayerWithFallback/initMap/clearTrack/fitMapTrack/toggleTrackAnimation/startTrackAnimation/stopTrackAnimation/handleResize/toggleFullscreen/getTrackMapFullscreenEl/getNativeFullscreenElement/isTrackMapFullscreenActive/requestNativeFullscreen/exitNativeFullscreen/enterTrackMapOverlayFullscreen/exitTrackMapOverlayFullscreen/refreshTrackMapAfterFullscreen/updateTrackMapFullscreenBtn/onTrackMapFullscreenChange/toggleTrackMapFullscreen` → `trackMapController.ts:<cùng tên>` (`_addTileLayerWithFallback` → `addTileLayerWithFallback`)
+- `playback.js:addTerritorialOverlays` (giống hệt map.js) → dùng chung `src/shared/map/territorial.ts:addTerritorialOverlays`; `_addTileLayerWithFallback` khác map.js (log `[Playback]`) → port riêng trong `trackMapController.ts`, URL/attribution dùng chung hằng số của `shared/map/tiles.ts`
+- `bindEvents` phần nút bản đồ (`#pb-map-fullscreen-btn`, `#pb-track-play-btn` — onClick chỉ có khi `store.initialized`) → `components/RightPanel.tsx`; phần document (`fullscreenchange`×4, `keydown` Escape) → `trackMapController.ts:bindTrackMapEvents` gọi trong `init.ts:playbackInit`
+- DOM `#pb-track-legend`, `.pb-map-placeholder-text`, `#pb-timeline-body`, `#pb-timeline-count`, `#pb-stat-*`, icon/title nút bản đồ, class `pb-track-fs-mode` → `store.ts` (`trackLegend/trackMapInitialized/timeline/timelineCount/stats/trackAnimating/trackMapFsActive/trackFsMode`) + `components/{TrackMap,Timeline,TrackStats}.tsx`
+- `styles2.css:3148-3207` (fullscreen, popup) → `playback.css`; `styles2.css:3341-3392, 3486-3569` (legend, nhật ký) → Tailwind trong `TrackMap.tsx` / `Timeline.tsx`
+
+Bản gốc giữ nguyên / ghi chú:
+
+- `toggleFullscreen` (fullscreen `#pb-player-card`) không được gắn và không export ở bản gốc → port vào `trackMapController.ts` nhưng không nối UI.
+- `fitMapTrack` không có nơi gọi ở bản gốc → port, không nối UI.
+- Không có `useLoadGpsTrackMutation`: bản gốc chỉ gọi `loadGpsTrack` từ `onSearch` (await trực tiếp, giữ thứ tự), không có trigger riêng.
+- `initMap` chỉ chạy khi có track (`renderTrackOnMap`) hoặc click nhật ký — bản đồ không tạo khi mở section.
+- `renderTrackOnMap` không được await trong `loadGpsTrack` (OSRM chạy nền, timeline/thống kê/trạng thái cập nhật ngay). Nếu một lần tìm kiếm mới `clearTrack` trong lúc OSRM của lần trước đang chờ, phần sau `await` vẫn dùng `_trackLayer/_markerLayer` hiện tại (có thể null → lỗi promise không bắt) — giữ nguyên.
+- OSRM: lỗi ở một chunk → chèn điểm thô của chunk đó, nên đường "thô nét đậm" (`setStyle`) chỉ xảy ra khi < 2 điểm. Các chunk gọi tuần tự (50 điểm, gối đầu 1).
+- `clearTrack` gọi `stopTrackAnimation` trước khi xoá `_trackPoints`, nên ở lần tìm kiếm thứ hai trạng thái nhảy từ "Đang tải..." sang "`N` điểm GPS" (số điểm cũ, không kèm nhãn đỗ xe) trong lúc tải — giữ nguyên. `stopTrackAnimation` cũng luôn đặt lại "`N` điểm GPS" (mất nhãn " · k lần đỗ ≥30p").
+- `computeStats`: tốc độ tối đa bỏ qua điểm đầu tiên (vòng lặp từ i = 1) — giữ nguyên.
+- Geocode: lỗi (HTTP !ok, throw) cũng được cache với giá trị `''` như `_geocodeCache.set(key, '')`; key làm tròn 4 chữ số nhưng URL dùng tọa độ gốc của lần gọi đầu. Khác biệt nhỏ: `fetchQuery` gộp hai lời gọi đồng thời cùng key (bản gốc gọi `fetch` hai lần nếu lần đầu chưa xong — chỉ có thể xảy ra khi hai lần tải GPS chồng nhau).
+- `enrichTimelinePlaces`: tra cứu tuần tự, chờ `GEO_REQUEST_DELAY_MS` (140 ms) sau mỗi lần tra cứu (kể cả khi trúng cache); tối đa `MAX_GEO_ENRICH_ROWS` (35) lần, phần còn lại hiện tọa độ "(mở bản đồ để xem)". "Hàng `.pb-tl-place` còn tồn tại" ⇔ `store.timeline.entries` vẫn là mảng đang tra cứu.
+- Click nhật ký: `#pb-channel-select` / `#pb-stream-type` không có trong index.html → kênh '1', stream '1'; `showPlaybackIframe` không await.
+- Vòng `forEach` vô dụng trên `window.PlaybackModule[k]` trong `clearTrack` bị bỏ (không có tác dụng).
+- `#pb-track-status-stats` không tồn tại (đã ghi ở Task 12).
+- Địa chỉ (`p.addr`), tiêu đề nhật ký render bằng JSX (bản gốc `escapeHtml` → innerHTML) — tương đương; popup Leaflet (`buildSpeedTimePopup`) vẫn là chuỗi HTML như bản gốc (R13).
+- a11y: `.pb-timeline-item` thêm `role="button"`, `tabIndex=0`, Enter/Space; nút fullscreen cập nhật cả `aria-label` theo `title`.
+- CSS `:fullscreen` / `:-webkit-full-screen` tách thành hai rule (bản gốc gộp một selector list).
