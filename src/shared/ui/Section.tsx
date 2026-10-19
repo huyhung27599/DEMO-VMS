@@ -30,11 +30,15 @@ type SectionHeaderProps = {
   title: ReactNode
   subtitle?: ReactNode
   children?: ReactNode
+  /** class bổ sung (vd. `#playback-section .section-header` có padding riêng) */
+  className?: string
 }
 
-export function SectionHeader({ title, subtitle, children }: SectionHeaderProps) {
+export function SectionHeader({ title, subtitle, children, className = '' }: SectionHeaderProps) {
   return (
-    <header className="mb-6 flex items-center justify-between border-b-2 border-primary pb-4 max-[768px]:flex-col max-[768px]:items-start">
+    <header
+      className={`mb-6 flex items-center justify-between border-b-2 border-primary pb-4 max-[768px]:flex-col max-[768px]:items-start ${className}`}
+    >
       {subtitle === undefined ? (
         <h2 className="text-2xl text-primary">{title}</h2>
       ) : (

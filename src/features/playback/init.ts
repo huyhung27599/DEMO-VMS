@@ -1,2 +1,27 @@
-// Placeholder — Task 12 thay bằng PlaybackModule.init thật (có guard _isInitialized).
-export function playbackInit(): void {}
+import { localDt } from './lib'
+import { usePlaybackStore } from './store'
+
+// playback.js:402-412 PlaybackModule.init — gọi từ RootLayout mỗi lần showApp (main.js:60-62) và một lần
+// ở lần đăng nhập đầu (LoginScreen, playback.js:1955). Guard _isInitialized như bản gốc (Ruling R4).
+// Lưu ý: AppShell.test/lifecycle.test mock module này chỉ với `playbackInit` — không export thêm gì cần cho render.
+
+let isInitialized = false
+
+export function playbackInit(): void {
+  if (isInitialized) return
+  isInitialized = true
+  const now = new Date()
+  usePlaybackStore.setState({
+    beginTime: localDt(now),
+    endTime: localDt(now, true),
+    // loadVehicleDropdown(): bật query danh sách xe (queries.ts)
+    vehicleDropdownEnabled: true,
+    // bindEvents(): listener #pb-search-btn (các nút bản đồ / fullscreen / Esc: Task 13)
+    initialized: true,
+  })
+}
+
+/** Chỉ dùng trong test. */
+export function resetPlaybackInit(): void {
+  isInitialized = false
+}
