@@ -15,6 +15,30 @@
 - `frontend/js/api.js:fetchApi` → `src/shared/api/client.ts:fetchApi (+ handleSessionExpired, registerAuthBridge replaces AuthModule/#login-container check)`
 - `frontend/js/api.js:login … uninstallDevice (all 58 endpoint functions, lines 175-604) + return {}` → `src/shared/api/endpoints.ts:<same names> + api` (api keys == original return block at api.js:606; no `fetch` direct calls exist in the original endpoints, so none ported; `getSecurityContext` intentionally absent)
 
+### Task 4 — router, khung ứng dụng, màn đăng nhập
+
+- `frontend/js/main.js:VALID_ROUTES/APP_ROUTES/DEFAULT_ROUTE/Router.currentRoute` → `src/app/useActiveSection.ts:VALID_ROUTES/APP_ROUTES/DEFAULT_ROUTE/currentRoute`
+- `frontend/js/main.js:Router.navigate/Router.init (hashchange)` → `src/app/legacyHashHistory.ts:createLegacyHashHistory` + `src/app/router.tsx:createAppRouter` (beforeLoad: requireAuth/redirectToLogin; guard ở rootRoute cho hash không hợp lệ)
+- `frontend/js/main.js:checkAuthState` + `frontend/js/auth.js:init (dòng 486-490)` → `src/app/RootLayout.tsx:RootLayout` (effect một lần cho mỗi router)
+- `frontend/js/main.js:showApp (điều hướng, PlaybackModule.init, loadDashboardData)` → `src/app/RootLayout.tsx` (effect khi view → 'app': playbackInit, navigate('/dashboard'), refetchQueries(['dashboard']))
+- `frontend/js/main.js:showApp (init LiveView/Events/Map/EventServer/Vehicle khi chưa init)` → `src/app/useModuleEnabled.ts:useModuleEnabled`
+- `frontend/js/main.js:showLogin (URL)` → `src/app/RootLayout.tsx` (navigate('/login', replace)); `showLogin (giao diện: lỗi, reset form, nút)` → `src/features/auth/LoginScreen.tsx` (subscribe useAuthStore)
+- `frontend/js/main.js:switchSection` → `src/app/useActiveSection.ts:useActiveSection` (+ `onSectionShown`/`notifySectionShown` thay cho MapModule.handleResize, PlaybackModule.handleResize, EventsModule.resizeCharts, SettingsModule.refresh)
+- `frontend/js/main.js:sidebar mouseenter/mouseleave/transitionend (triggerMapResize)` → `src/app/Sidebar.tsx:triggerMapResize` (notifySectionShown('map'))
+- `frontend/js/main.js:navItems click/keydown` → `src/app/Sidebar.tsx` (button onClick → navigate)
+- `frontend/js/main.js:logoutBtn click, hideLogoutConfirm, logout-confirm-yes/no/close, overlay click` → `src/app/Sidebar.tsx` + `src/app/AppShell.tsx` + `src/app/LogoutConfirmModal.tsx`
+- `frontend/js/main.js:btnOpenSettingsPassword click` → `src/features/settings/SettingsSection.tsx` → `src/features/auth/store.ts:openChangePasswordModal`
+- `frontend/js/main.js:loadDashboardData` → `queryClient.refetchQueries({ queryKey: ['dashboard'] })` trong `src/app/RootLayout.tsx`
+- `frontend/js/main.js:AppHelpers.showToast` → `src/shared/ui/toastStore.ts:showToast/removeToast` + `src/shared/ui/ToastContainer.tsx`
+- `frontend/js/auth.js:handleLogin (giao diện)` → `src/features/auth/LoginScreen.tsx:handleLogin` (+ `mutations.ts:useLoginMutation`, `schemas.ts:loginSchema`)
+- `frontend/js/auth.js:init (toggle hiện/ẩn mật khẩu, khôi phục remember-me)` → `src/features/auth/LoginScreen.tsx`
+- `frontend/js/auth.js:setResetModalVisible/clearResetRequestForm/handleResetRequest` → `src/features/auth/ResetRequestModal.tsx` + `mutations.ts:handleResetRequest/useResetRequestMutation` (clear = remount bằng `key`)
+- `frontend/js/auth.js:setChangePasswordModalVisible/clearChangePasswordForm/handleChangePasswordAuth` → `src/features/auth/store.ts` + `ChangePasswordModal.tsx` + `mutations.ts:handleChangePasswordAuth/useChangePasswordMutation` + `schemas.ts:changePasswordSchema`
+- `frontend/js/auth.js:setForgotModalVisible/clearForgotPasswordForm/handleForgotPasswordSubmit` → `src/features/auth/ForgotPasswordModal.tsx` + `mutations.ts:handleForgotPasswordSubmit/useForgotPasswordMutation` + `schemas.ts:forgotPasswordSchema` (không mount — xem bên dưới)
+- `frontend/js/playback.js:1955 (auth-success once → PlaybackModule.init)` → `src/features/auth/LoginScreen.tsx:playbackInitOnFirstLogin`
+- `frontend/index.html:55-163` → `src/features/auth/LoginScreen.tsx`; `166-238` → `ResetRequestModal.tsx`; `240-326` → `ChangePasswordModal.tsx`; `326-433` → `src/app/LogoutConfirmModal.tsx`; `558-627` → `src/app/AppShell.tsx` + `Sidebar.tsx`; `1294-1331` → `src/features/settings/SettingsSection.tsx`
+- `frontend/css/styles2.css (.btn*, .content-section, .section-header, .toast*, body/h1-h6/scrollbar)` → `src/shared/ui/{Button,Section,ToastContainer}.tsx` + `toast.css` + `src/styles/index.css @layer base`; `statistics.css:.modal-overlay/.modal-content` → `src/shared/ui/Modal.tsx`
+
 ## Bug bản gốc giữ nguyên
 
 - `auth.js:260` gọi `ApiModule.getSecurityContext?.()` nhưng `api.js` không có hàm này, nên header X-CSRF-Token gửi đi luôn là `""`. `client.ts` cố ý KHÔNG export `getSecurityContext`; bản port auth phải giữ hành vi gửi `""`.
@@ -26,3 +50,25 @@
 - `frontend/js/auth.js:handleLogin (logic only)/logout` → `src/shared/auth/authStore.ts:authActions.login/logout`
 - `frontend/js/main.js:showApp/showLogin (state only)` → `src/shared/auth/authStore.ts:authActions.showApp/showLogin` (navigation/refetch done by RootLayout)
 - `auth.js:teardownActivityListeners` chỉ clear timer, không gỡ listener (giữ nguyên bản gốc).
+
+### Task 4
+
+- `index.html` gốc KHÔNG có `#forgot-password-modal`: `setForgotModalVisible` không làm gì. Link "Quên mật khẩu?" (`#reset-request-link`, cũng có class `.forgot-pwd`) gắn cả hai handler nhưng chỉ `#reset-request-modal` hiện. `ForgotPasswordModal` được port + test nhưng không mount. Nhãn/tiêu đề của modal này do bản port tự đặt (không có markup gốc).
+- `showLogin` (main.js:126-130) luôn đặt nhãn nút đăng nhập là `'Đăng nhập'` (chữ thường), còn HTML ban đầu và nhánh lỗi của `handleLogin` dùng `'ĐĂNG NHẬP'`. Khi đăng nhập thành công nút giữ trạng thái disable `'Đang xác thực…'` tới lần showLogin sau. Giữ nguyên.
+- `showLogin` khi màn đăng nhập đã hiển thị và `reason` rỗng thì KHÔNG xóa thông báo lỗi cũ; chỉ lần hiển thị đầu (từ app hoặc lúc tải trang) mới reset form (`form.reset()` → bỏ chọn "Ghi nhớ đăng nhập") và đặt lỗi = reason.
+- Username ở sidebar: khi đăng nhập bằng form là chuỗi đã `sanitizeHTML` (entity như `&amp;` hiện nguyên văn vì gán bằng textContent); khi tải lại trang là username thô trong storage. Bản port render chuỗi y nguyên như textContent.
+- Mở modal đổi mật khẩu từ trang Cài đặt (main.js:214-220) KHÔNG xóa form/thông báo lỗi cũ. Đổi mật khẩu thành công không đóng modal; sau 1500 ms `logout()` chạy và modal (nằm ngoài app-container) vẫn hiện đè lên màn đăng nhập. Giữ nguyên: modal mount ở RootLayout.
+- Timer tự đóng 3000 ms của modal yêu cầu khôi phục không bị hủy: mở lại modal trong 3 giây sẽ bị đóng.
+- `handleResetRequest` dùng `fetch('/api/reset-password-request')` đường dẫn tương đối (không qua BASE_URL/fetchApi), header `X-CSRF-Token: ""` (Ruling R7).
+- `handleForgotPasswordSubmit` không kiểm tra độ mạnh mật khẩu mới (khác modal đổi mật khẩu).
+- Route `#event-server` hợp lệ nhưng bản gốc không có `#event-server-section` và không có mục sidebar: vùng nội dung trống. Bản port render placeholder rỗng (Task 15).
+- `showApp` gọi `PlaybackModule.init()` mỗi lần, listener `auth-success` `{ once: true }` gọi thêm ở lần đăng nhập đầu; init có guard `_isInitialized` nên vô hại (Ruling R4).
+
+### Task 4 — khác biệt do TanStack Router / a11y (ghi nhận)
+
+- Redirect trong `beforeLoad` của TanStack Router luôn là `replace` (`followRedirect` trong router-core). Khi ĐÃ đăng nhập, hash rỗng / không hợp lệ / `#/dashboard` / `#login` được thay bằng `#dashboard` bằng replace; bản gốc gán `location.hash` (thêm một entry history). Khi chưa đăng nhập hành vi trùng bản gốc (replace `#login`).
+- Đã đăng nhập, gõ hash không hợp lệ khi đang dùng app: bản gốc giữ URL và hiện dashboard; bản port đổi URL thành `#dashboard`.
+- `#Dashboard` (khác hoa/thường) lúc tải trang: bản gốc đổi thành `#dashboard`; router coi là cùng location nên URL giữ `#Dashboard` (section dashboard vẫn hiện). Route khác (vd. `#DRIVER`) giữ nguyên URL như bản gốc.
+- `switchSection` gốc có thể chạy hai lần sau đăng nhập (showApp + hashchange); bản port gọi `onSectionShown` một lần mỗi lần đổi section và hủy timer 150 ms nếu section đổi trước khi timer chạy.
+- `legacyHashHistory` ghi `history.pushState/replaceState` đồng bộ (createBrowserHistory gom bằng microtask).
+- Sidebar giãn rộng cả khi focus bàn phím nằm trong sidebar (`:focus-within`), ngoài `:hover` như bản gốc, để nhãn menu và nút "Đăng xuất" nhìn thấy khi dùng bàn phím. Nút ẩn/hiện mật khẩu là `<button aria-label>` thay cho `<svg>` click được. Nút đóng modal có `aria-label="Đóng"`.

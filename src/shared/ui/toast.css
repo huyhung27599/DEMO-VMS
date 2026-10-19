@@ -1,0 +1,54 @@
+/* Animation của toast (styles2.css:28-122) */
+@keyframes slideInPremium {
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutPremium {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+@keyframes toastProgress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.app-toast {
+  animation: slideInPremium 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.app-toast.removing {
+  animation: slideOutPremium 0.3s ease forwards;
+}
+
+.app-toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.app-toast-progress {
+  transform-origin: left;
+  animation: toastProgress linear forwards;
+}

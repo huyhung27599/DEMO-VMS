@@ -32,3 +32,80 @@
 :root {
   --transition-fast: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+@theme {
+  --animate-section-in: section-fade-in 0.3s ease;
+  /* main.js showApp/showLogin: opacity 0 -> 1 trong 0.3s */
+  --animate-fade-in: fade-in 0.3s ease;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes section-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Nền chung (styles2.css:123-178) */
+@layer base {
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-text-main);
+    font-size: 1rem;
+    line-height: 1.5;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+    color: var(--color-text-main);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(42, 157, 216, 0.4);
+  }
+
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
+  }
+}
