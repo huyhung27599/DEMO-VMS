@@ -46,7 +46,7 @@ describe('vòng đời đăng nhập / đăng xuất', () => {
     expect(useAuthStore.getState().hasShownApp).toBe(true)
     await waitFor(() => expect(window.location.hash).toBe('#dashboard'))
     expect(playbackInit).toHaveBeenCalled()
-    expect(refetch).toHaveBeenCalledWith({ queryKey: ['dashboard'] })
+    expect(refetch).toHaveBeenCalledWith({ queryKey: ['dashboard', 'refresh'] })
     const mousemoveCount = () => addListener.mock.calls.filter((c) => c[0] === 'mousemove').length
     expect(mousemoveCount()).toBe(1)
 
@@ -64,7 +64,7 @@ describe('vòng đời đăng nhập / đăng xuất', () => {
     await waitFor(() => expect(window.location.hash).toBe('#dashboard'))
     expect(useAuthStore.getState().hasShownApp).toBe(true)
     expect(mousemoveCount()).toBe(2)
-    expect(refetch.mock.calls.filter((c) => JSON.stringify(c[0]) === '{"queryKey":["dashboard"]}')).toHaveLength(2)
+    expect(refetch.mock.calls.filter((c) => JSON.stringify(c[0]) === '{"queryKey":["dashboard","refresh"]}')).toHaveLength(2)
   })
 
   it('tải trang khi đã đăng nhập: gắn activity listener một lần (StrictMode), gọi playbackInit', async () => {

@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Outlet, useNavigate, useRouter } from '@tanstack/react-router'
 import { ChangePasswordModal } from '../features/auth/ChangePasswordModal'
 import { LoginScreen } from '../features/auth/LoginScreen'
+import { dashboardKeys } from '../features/dashboard/queries'
 import { AiToastStack } from '../features/event-server/components/AiToastStack'
 import { playbackInit } from '../features/playback/init'
 import { authActions, useAuthStore } from '../shared/auth/authStore'
@@ -46,7 +47,7 @@ export function RootLayout() {
       const route = currentRoute(router.state.location.pathname)
       if (route === 'login' || route === DEFAULT_ROUTE) void navigate({ to: '/dashboard' })
       // main.js:81 loadDashboardData()
-      void queryClient.refetchQueries({ queryKey: ['dashboard'] })
+      void queryClient.refetchQueries({ queryKey: dashboardKeys.refresh })
     } else {
       // main.js:102-107 window.location.replace('#login')
       void navigate({ to: '/login', replace: true })

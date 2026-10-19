@@ -9,6 +9,7 @@ import { ChartCard } from './components/ChartCard'
 import { KpiCard } from './components/KpiCard'
 import { LiveVehiclesPanel } from './components/LiveVehiclesPanel'
 import './dashboard.css'
+import { initDashboard } from './init'
 import { dashboardKeys, dashboardRefreshQueryOptions, realtimeAlarmsQueryOptions } from './queries'
 import { useDashboardStore } from './store'
 
@@ -34,6 +35,7 @@ export function DashboardSection({ hidden }: { hidden: boolean }) {
 
   // initCharts() + resize khi quay lại section (nav click -> setTimeout 150 ms, đã nằm trong onSectionShown)
   useEffect(() => {
+    initDashboard()
     dashboardCharts.initCharts({
       vehicleStatus: statusRef.current,
       onlineTrend: trendRef.current,

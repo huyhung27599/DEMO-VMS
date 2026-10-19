@@ -98,3 +98,8 @@ Bản gốc giữ nguyên / ghi chú:
 - Bản gốc chèn `type`/`plate` của báo động vào `innerHTML` không escape (XSS tiềm ẩn); JSX escape tự động. Biển số bảng xe vốn đã `sanitizeHTML` nên hiển thị như nhau.
 - `formatTime` với chuỗi không hợp lệ không ném lỗi nên không bao giờ trả `'--'` (cho ra `NaN/NaN NaN:NaN`): giữ nguyên.
 - Test: `echarts` được mock toàn cục trong `src/test/setup.ts` (jsdom không có canvas).
+
+### Task 5 — sửa vòng 1
+
+- Lần nạp đầu của dashboard chạy trực tiếp qua `src/features/dashboard/init.ts:initDashboard` (không qua query): đã đăng nhập khi tải trang -> `refresh()` ngay; chưa đăng nhập -> hook một lần ở lần chuyển sang view `app` đầu tiên (thay cho listener `auth-success` `{once:true}`). Cộng với `refetchQueries(['dashboard','refresh'])` của RootLayout (thay `loadDashboardData`) nên cả hai trường hợp đều chạy `refresh()` hai lần như bản gốc (dashboard.js:747-753 + main.js:253-257). Query có `staleTime: Infinity` nên không tự fetch lúc mount.
+- RootLayout chỉ refetch `dashboardKeys.refresh` (không refetch `realtimeAlarms`), tránh gọi thêm `syncAiEventsLocal` lúc đăng nhập.

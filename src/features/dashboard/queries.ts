@@ -1,5 +1,4 @@
 import { queryOptions } from '@tanstack/react-query'
-import { isAuthenticated } from '../../shared/auth/session'
 import { pollRealtimeAlarms, refresh } from './loaders'
 
 export const dashboardKeys = {
@@ -10,7 +9,8 @@ export const dashboardKeys = {
 
 // dashboard.js:739-752. setInterval(refresh, 120_000); lần nạp đầu chỉ chạy khi đã đăng nhập
 // (chưa đăng nhập: chờ 'auth-success', ở bản mới là refetchQueries(['dashboard']) trong RootLayout).
-// initialData + staleTime: Infinity chặn lần fetch khi mount lúc chưa đăng nhập; refetchInterval vẫn chạy.
+// initialData + staleTime: Infinity: query không tự fetch khi mount; lần nạp đầu do initDashboard() chạy
+// trực tiếp (không qua query, để không bị gộp/hủy với refetchQueries của RootLayout). refetchInterval vẫn chạy.
 export function dashboardRefreshQueryOptions() {
   return queryOptions({
     queryKey: dashboardKeys.refresh,
@@ -19,7 +19,7 @@ export function dashboardRefreshQueryOptions() {
       return null
     },
     initialData: null,
-    staleTime: isAuthenticated() ? 0 : Infinity,
+    staleTime: Infinity,
     refetchInterval: 120_000,
     refetchIntervalInBackground: true,
   })
