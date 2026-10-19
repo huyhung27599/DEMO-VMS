@@ -20,3 +20,9 @@
 - `auth.js:260` gọi `ApiModule.getSecurityContext?.()` nhưng `api.js` không có hàm này, nên header X-CSRF-Token gửi đi luôn là `""`. `client.ts` cố ý KHÔNG export `getSecurityContext`; bản port auth phải giữ hành vi gửi `""`.
 - `fetchApi` thay đổi object `params` của caller (thêm `jsession`, `_t`) như bản gốc.
 - Retry 403 chỉ một lần; nếu `fetchCsrfToken` ném lỗi trong lúc retry thì bị catch thành `result:99` như bản gốc.
+- `frontend/js/auth.js:parseJwt/isTokenExpired/hasPersistentSession/getToken/getStoredUsername/clearAuthStorage/saveAuthSession/isAuthenticated/getUsername` → `src/shared/auth/session.ts:<same>`
+- `frontend/js/auth.js:sanitizeHTML` → `src/shared/lib/sanitize.ts:sanitizeHTML`
+- `frontend/js/auth.js:getInactivityTimeout/resetActivityTimer/setupActivityListeners/teardownActivityListeners` → `src/shared/auth/inactivity.ts:<same>` (timeout callback registered by authStore via registerInactivityHandler)
+- `frontend/js/auth.js:handleLogin (logic only)/logout` → `src/shared/auth/authStore.ts:authActions.login/logout`
+- `frontend/js/main.js:showApp/showLogin (state only)` → `src/shared/auth/authStore.ts:authActions.showApp/showLogin` (navigation/refetch done by RootLayout)
+- `auth.js:teardownActivityListeners` chỉ clear timer, không gỡ listener (giữ nguyên bản gốc).
