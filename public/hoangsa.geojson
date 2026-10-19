@@ -1,0 +1,111 @@
+{
+  "type": "FeatureCollection",
+  "name": "Đặc Khu Hoàng Sa",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Đặc khu Hoàng Sa",
+        "name_en": "Paracel Islands",
+        "type": "archipelago",
+        "country": "Việt Nam",
+        "description": "Đặc khu thuộc chủ quyền Việt Nam trên Biển Đông"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [111.12, 15.80], [111.35, 15.72], [111.70, 15.75],
+          [112.00, 15.80], [112.30, 15.90], [112.72, 16.10],
+          [112.80, 16.40], [112.75, 16.80], [112.50, 17.05],
+          [112.20, 17.10], [111.80, 17.08], [111.45, 17.05],
+          [111.18, 16.90], [111.05, 16.60], [111.00, 16.20],
+          [111.10, 15.90], [111.12, 15.80]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nhóm Lưỡi Liềm",
+        "name_en": "Crescent Group",
+        "type": "island_group"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [111.12, 15.78], [111.50, 15.72], [111.82, 15.80],
+          [112.00, 16.00], [111.95, 16.38], [111.75, 16.52],
+          [111.45, 16.50], [111.18, 16.40], [111.05, 16.15],
+          [111.10, 15.90], [111.12, 15.78]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nhóm An Vĩnh",
+        "name_en": "Amphitrite Group",
+        "type": "island_group"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [112.12, 16.45], [112.45, 16.40], [112.75, 16.55],
+          [112.80, 16.80], [112.72, 17.08], [112.40, 17.12],
+          [112.10, 17.08], [111.90, 16.90], [111.88, 16.65],
+          [112.00, 16.48], [112.12, 16.45]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Hoàng Sa (Pattle)", "island_id": "hsa_01" },
+      "geometry": { "type": "Point", "coordinates": [111.601, 16.533] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Phú Lâm (Woody)", "island_id": "hsa_02" },
+      "geometry": { "type": "Point", "coordinates": [112.337, 16.836] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Linh Côn", "island_id": "hsa_03" },
+      "geometry": { "type": "Point", "coordinates": [112.727, 16.667] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Duy Mộng", "island_id": "hsa_04" },
+      "geometry": { "type": "Point", "coordinates": [111.738, 16.455] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Quang Hòa", "island_id": "hsa_05" },
+      "geometry": { "type": "Point", "coordinates": [111.714, 16.453] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Hữu Nhật", "island_id": "hsa_06" },
+      "geometry": { "type": "Point", "coordinates": [111.576, 16.537] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Tri Tôn", "island_id": "hsa_07" },
+      "geometry": { "type": "Point", "coordinates": [111.182, 15.787] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Bắc", "island_id": "hsa_08" },
+      "geometry": { "type": "Point", "coordinates": [111.508, 17.081] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Cây", "island_id": "hsa_09" },
+      "geometry": { "type": "Point", "coordinates": [112.263, 16.978] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Đá Bắc", "island_id": "hsa_10" },
+      "geometry": { "type": "Point", "coordinates": [111.502, 17.093] }
+    }
+  ]
+}

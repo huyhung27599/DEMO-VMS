@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "title": "Kho trung tâm (Demo)",
+        "category": "Kho/Bãi",
+        "description": "Thay file này bằng export POI từ Mapme (GeoJSON)."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [108.206230, 16.047079]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "title": "Trạm dịch vụ (Demo)",
+        "category": "Trạm",
+        "description": "Ví dụ POI dạng Point."
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [105.834160, 21.027764]
+      }
+    }
+  ]
+}
+

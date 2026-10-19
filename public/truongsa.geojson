@@ -1,0 +1,119 @@
+{
+  "type": "FeatureCollection",
+  "name": "Đặc Khu Trường Sa",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Đặc Khu Trường Sa",
+        "name_en": "Spratly Islands",
+        "type": "archipelago",
+        "country": "Việt Nam",
+        "description": "Đặc khu thuộc chủ quyền Việt Nam trên Biển Đông"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [111.40, 7.00], [113.00, 7.00], [114.50, 7.20],
+          [115.50, 7.80], [116.50, 8.50], [117.50, 9.50],
+          [117.50, 10.50], [116.50, 11.20], [115.50, 11.80],
+          [114.00, 12.00], [112.50, 11.80], [111.60, 11.00],
+          [111.30, 10.00], [111.30, 8.50], [111.40, 7.00]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nhóm Đảo Phía Bắc",
+        "name_en": "Northern Cluster",
+        "type": "island_group"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [113.80, 10.00], [114.10, 9.80], [114.70, 9.85],
+          [114.90, 10.10], [114.80, 10.50], [114.40, 10.75],
+          [113.90, 10.50], [113.70, 10.20], [113.80, 10.00]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Nhóm Đảo Phía Nam",
+        "name_en": "Southern Cluster",
+        "type": "island_group"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [111.70, 7.70], [112.30, 7.60], [113.00, 7.90],
+          [113.40, 8.30], [113.50, 8.80], [113.00, 9.10],
+          [112.30, 9.00], [111.80, 8.60], [111.60, 8.10],
+          [111.70, 7.70]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Trường Sa Lớn", "island_id": "tsa_01" },
+      "geometry": { "type": "Point", "coordinates": [111.921, 8.649] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Sinh Tồn", "island_id": "tsa_02" },
+      "geometry": { "type": "Point", "coordinates": [114.330, 9.882] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Sinh Tồn Đông", "island_id": "tsa_03" },
+      "geometry": { "type": "Point", "coordinates": [114.564, 9.888] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Nam Yết", "island_id": "tsa_04" },
+      "geometry": { "type": "Point", "coordinates": [114.357, 10.179] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Sơn Ca", "island_id": "tsa_05" },
+      "geometry": { "type": "Point", "coordinates": [114.461, 10.387] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Phan Vinh", "island_id": "tsa_06" },
+      "geometry": { "type": "Point", "coordinates": [113.681, 8.024] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo An Bang", "island_id": "tsa_07" },
+      "geometry": { "type": "Point", "coordinates": [112.912, 7.875] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Thuyền Chài", "island_id": "tsa_08" },
+      "geometry": { "type": "Point", "coordinates": [113.244, 8.192] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Trường Sa Đông", "island_id": "tsa_09" },
+      "geometry": { "type": "Point", "coordinates": [112.590, 8.933] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Đá Tây", "island_id": "tsa_10" },
+      "geometry": { "type": "Point", "coordinates": [112.232, 8.860] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Đá Đông", "island_id": "tsa_11" },
+      "geometry": { "type": "Point", "coordinates": [112.597, 8.809] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Đảo Tiên Nữ", "island_id": "tsa_12" },
+      "geometry": { "type": "Point", "coordinates": [114.671, 8.899] }
+    }
+  ]
+}
