@@ -124,4 +124,10 @@ describe('buildSavePayload (vehicle.js:270)', () => {
     expect(p).toEqual({ vehiIdno: 'A', devIdno: 'D', vehiColor: '', companyId: '' })
     expect('vehiType' in p).toBe(false)
   })
+  it('đơn vị không khớp lựa chọn và vẫn rỗng -> bỏ companyId; đã chọn thì giữ', () => {
+    const base = { vehiIdno: 'A', devIdno: 'D', vehiType: '1', vehiColor: '' }
+    expect('companyId' in buildSavePayload({ ...base, companyId: '' }, { companyUnmatched: true })).toBe(false)
+    expect(buildSavePayload({ ...base, companyId: 'c' }, { companyUnmatched: true }).companyId).toBe('c')
+    expect(buildSavePayload({ ...base, companyId: '' }).companyId).toBe('')
+  })
 })

@@ -96,11 +96,16 @@ export type VehicleFormValues = {
 }
 
 // vehicle.js:270-271 — Object.fromEntries(new FormData(form)): <select> không có lựa chọn thì không có mặt.
-export function buildSavePayload(values: VehicleFormValues): Record<string, string> {
+// `companyUnmatched`: chế độ sửa, coId của xe không có trong <select> đơn vị -> `select.value = coId` không chọn gì
+// (selectedIndex -1) nên FormData bỏ companyId. Người dùng đã chọn một đơn vị (giá trị khác '') thì vẫn gửi.
+export function buildSavePayload(
+  values: VehicleFormValues,
+  opts: { companyUnmatched?: boolean } = {},
+): Record<string, string> {
   const payload: Record<string, string> = { vehiIdno: values.vehiIdno, devIdno: values.devIdno }
   if (values.vehiType !== '') payload.vehiType = values.vehiType
   payload.vehiColor = values.vehiColor
-  payload.companyId = values.companyId
+  if (!(opts.companyUnmatched && values.companyId === '')) payload.companyId = values.companyId
   return payload
 }
 

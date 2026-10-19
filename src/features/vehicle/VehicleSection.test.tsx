@@ -222,6 +222,31 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
     expect(api.queryUserVehicle).toHaveBeenCalledTimes(2)
   })
 
+  it('sửa xe có đơn vị không nằm trong danh sách: không gửi companyId (như FormData gốc)', async () => {
+    vi.mocked(api.queryUserVehicle).mockResolvedValue({
+      result: 0,
+      vehicles: [...VEHICLES, { nm: '77X-999', vehiType: '1', groupId: 'g9', devIdno: 'DEV9' }],
+    })
+    await renderVehicle()
+    const row = screen.getByText('77X-999').closest('tr') as HTMLElement
+    fireEvent.click(within(row).getByTitle('Chỉnh sửa'))
+    expect((screen.getByLabelText(/Nhóm quản lý/) as HTMLSelectElement).value).toBe('')
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    await settle()
+    expect(api.editVehicle).toHaveBeenCalledTimes(1)
+    const sent = vi.mocked(api.editVehicle).mock.calls[0][0] as Record<string, string>
+    expect('companyId' in sent).toBe(false)
+    expect(sent.vehiIdno).toBe('77X-999')
+  })
+
+  it('sửa xe không có đơn vị: vẫn gửi companyId rỗng; chọn đơn vị thì gửi giá trị đã chọn', async () => {
+    await renderVehicle()
+    fireEvent.click(screen.getAllByTitle('Chỉnh sửa')[2]) // 51C-333, không có đơn vị
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    await settle()
+    expect(vi.mocked(api.editVehicle).mock.calls[0][0]).toMatchObject({ companyId: '' })
+  })
+
   it('mở lại form thêm sau khi sửa: biển số hết chỉ đọc và form được đặt lại', async () => {
     await renderVehicle()
     fireEvent.click(screen.getAllByTitle('Chỉnh sửa')[0])

@@ -129,6 +129,31 @@ describe('updateMapMarkers (map.js:405-578)', () => {
     expect(main.setView).toHaveBeenLastCalledWith([16.2, 106.5], main.getZoom(), { animate: false })
   })
 
+  it('escape dữ liệu API/localStorage chèn vào HTML popup và divIcon', () => {
+    const { main } = setup()
+    localStorage.setItem(
+      'geic_vehicle_icons',
+      JSON.stringify({ 'X"><img src=x onerror=alert(3)>': { type: 'navigation', color: '#fff"><img src=x onerror=alert(2)>' } }),
+    )
+    mapController.updateMapMarkers([
+      {
+        ...ONLINE,
+        id: 'X"><img src=x onerror=alert(3)>',
+        tim: '<img src=x onerror=alert(1)>',
+        sn: '<img src=x onerror=alert(4)>',
+        hx: '<img src=x onerror=alert(5)>',
+      } as never,
+    ])
+    const html = markersOn(main)[0].popupContent as string
+    const icon = vi.mocked(L.divIcon).mock.calls.at(-1)![0] as { html: string }
+    for (const out of [html, icon.html]) {
+      expect(out).not.toMatch(/<img src=x/)
+      expect(out).not.toContain('"><img')
+    }
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    expect(html).toContain('&lt;img src=x onerror=alert(4)&gt;')
+  })
+
   it('xoá marker của xe không còn trong danh sách', () => {
     const { main } = setup()
     mapController.updateMapMarkers([ONLINE, { ...ONLINE, id: 'DEV2' }])

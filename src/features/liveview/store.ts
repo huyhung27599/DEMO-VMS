@@ -72,11 +72,6 @@ const INITIAL: LiveviewState = {
 
 export const useLiveviewStore = create<LiveviewState>(() => ({ ...INITIAL }))
 
-/** Thiết bị đang phát trên video wall ([] khi không có player). Mảng mới mỗi lần: dùng với `useShallow`. */
-export function selectSelectedDeviceIds(s: LiveviewState): string[] {
-  return s.grid.kind === 'player' ? [s.grid.deviceId] : []
-}
-
 /** Chỉ dùng trong test. */
 export function resetLiveviewStore(): void {
   useLiveviewStore.setState({ ...INITIAL })

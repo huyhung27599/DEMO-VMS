@@ -284,7 +284,7 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
 
     // Custom Icon Configuration
     const custIcon: Partial<{ type: string; color: string }> = getCustomIcon(uid) || {}
-    const userColor = custIcon.color || '#10b981'
+    const userColor = attrEscape(custIcon.color || '#10b981') // localStorage -> thuộc tính HTML
     const userType = custIcon.type || 'navigation'
 
     // Time
@@ -301,7 +301,7 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
     if (s.dn) additionalInfo += `<div><strong>Tài xế:</strong> ${sanitizeHTML(s.dn)}</div>`
     if (s.lc) additionalInfo += `<div><strong>Quãng đường:</strong> ${(s.lc / 1000).toFixed(1)} km</div>`
     if (s.yl) additionalInfo += `<div><strong>Nhiên liệu:</strong> ${(s.yl / 100).toFixed(1)} L</div>`
-    if (s.sn) additionalInfo += `<div><strong>Vệ tinh GPS:</strong> ${s.sn}</div>`
+    if (s.sn) additionalInfo += `<div><strong>Vệ tinh GPS:</strong> ${sanitizeHTML(String(s.sn))}</div>`
 
     const statusText = isOnline
       ? '<span style="color:green;font-weight:bold">Trực tuyến</span>'
@@ -316,15 +316,15 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
           <div style="font-size:13px;line-height:1.6;color:var(--color-text-main)">
             <div><strong>Trạng thái:</strong> ${statusText}</div>
             <div><strong>Vận tốc:</strong> ${spd} km/h</div>
-            <div><strong>Hướng quay:</strong> ${heading}°</div>
-            <div><strong>Cập nhật:</strong> ${timeText}</div>
+            <div><strong>Hướng quay:</strong> ${sanitizeHTML(String(heading))}°</div>
+            <div><strong>Cập nhật:</strong> ${sanitizeHTML(timeText)}</div>
             <div><strong>Tọa độ:</strong> ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
             ${additionalInfo}
           </div>
-          <div id="icon-settings-${uid}" style="display:none; margin-top:10px; padding:8px; background:#f0f2f5; border-radius:4px; font-size:12px;">
+          <div id="icon-settings-${attrEscape(uid)}" style="display:none; margin-top:10px; padding:8px; background:#f0f2f5; border-radius:4px; font-size:12px;">
              <div style="margin-bottom:6px;display:flex;justify-content:space-between;">
                Khung xe:
-               <select id="icon-type-${uid}" style="padding:2px 4px; border-radius:3px; border:1px solid #ddd; outline:none;">
+               <select id="icon-type-${attrEscape(uid)}" style="padding:2px 4px; border-radius:3px; border:1px solid #ddd; outline:none;">
                   <option value="navigation" ${userType === 'navigation' ? 'selected' : ''}>Mũi tên (Mặc định)</option>
                   <option value="car" ${userType === 'car' ? 'selected' : ''}>Ô tô</option>
                   <option value="truck" ${userType === 'truck' ? 'selected' : ''}>Xe tải / Buýt</option>
@@ -332,7 +332,7 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
              </div>
              <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
                Màu sắc:
-               <input type="color" id="icon-color-${uid}" value="${userColor}" style="border:none; width:30px; height:20px; padding:0; cursor:pointer;">
+               <input type="color" id="icon-color-${attrEscape(uid)}" value="${userColor}" style="border:none; width:30px; height:20px; padding:0; cursor:pointer;">
              </div>
              <button data-map-action="save-icon" data-uid="${attrEscape(uid)}" class="btn btn-primary" style="width:100%; padding:4px 0; font-size:12px;"><i class="fa-solid fa-save"></i> Lưu giao diện</button>
           </div>
@@ -341,7 +341,7 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
     // SVG Icon (100% transparent - không có nền xám như PNG)
     const svgShape = getTrackingIconSvg(userType, userColor, isOnline)
     const markerHtml = `
-        <div style="transform:rotate(${heading}deg);transition:transform 0.4s ease;display:flex;align-items:center;justify-content:center;">
+        <div style="transform:rotate(${attrEscape(String(heading))}deg);transition:transform 0.4s ease;display:flex;align-items:center;justify-content:center;">
           ${svgShape}
         </div>`
 

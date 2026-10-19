@@ -5,13 +5,13 @@ import { buildSavePayload, type VehicleFormValues } from './lib'
 import { refresh } from './queries'
 
 // vehicle.js:267-303 handleSave. `editing` = state.currentEditId có giá trị.
-export type SaveVehicleVars = { values: VehicleFormValues; editing: boolean }
+export type SaveVehicleVars = { values: VehicleFormValues; editing: boolean; companyUnmatched?: boolean }
 
 export function useSaveVehicleMutation({ onSaved }: { onSaved: () => void }) {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ values, editing }: SaveVehicleVars) => {
-      const data = buildSavePayload(values)
+    mutationFn: ({ values, editing, companyUnmatched }: SaveVehicleVars) => {
+      const data = buildSavePayload(values, { companyUnmatched })
       return editing ? api.editVehicle(data) : api.addVehicle(data)
     },
     onSuccess: (res, { editing }) => {

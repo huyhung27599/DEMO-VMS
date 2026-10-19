@@ -21,6 +21,8 @@ type ModalState = {
   editing: boolean
   plateReadOnly: boolean
   initialValues: VehicleFormValues
+  /** Sửa xe có coId không nằm trong danh sách đơn vị: <select> không chọn gì -> FormData bỏ companyId */
+  companyUnmatched: boolean
 }
 
 export function VehicleSection({ hidden }: { hidden: boolean }) {
@@ -60,12 +62,14 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
     editing: false,
     plateReadOnly: false,
     initialValues: EMPTY_VEHICLE_FORM,
+    companyUnmatched: false,
   })
   const closeModal = () => setModal((m) => ({ ...m, open: false }))
 
   const openModal = (vehiclePlate: string | null = null) => {
     let initialValues = EMPTY_VEHICLE_FORM
     let plateReadOnly = false
+    let companyUnmatched = false
     if (vehiclePlate) {
       const v = vehicles?.find((x) => (x.vehiIdno || x.nm) === vehiclePlate)
       if (v) {
@@ -79,6 +83,7 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
           vehiColor: v.vehiColor || '',
           companyId: companies.some((c) => c.id === coId) ? coId : '',
         }
+        companyUnmatched = coId !== '' && !companies.some((c) => c.id === coId)
         plateReadOnly = true // biển số là khóa chính
       }
     }
@@ -88,11 +93,12 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
       editing: Boolean(vehiclePlate),
       plateReadOnly,
       initialValues,
+      companyUnmatched,
     }))
   }
 
   const saveMutation = useSaveVehicleMutation({ onSaved: closeModal })
-  const handleSave = (values: VehicleFormValues) => saveMutation.mutate({ values, editing: modal.editing })
+  const handleSave = (values: VehicleFormValues) => saveMutation.mutate({ values, editing: modal.editing, companyUnmatched: modal.companyUnmatched })
 
   // ── Xóa (deleteVehicle / closeDeleteModal / confirmDelete) ──
   const [del, setDel] = useState({ open: false, plate: '' })

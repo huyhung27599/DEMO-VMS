@@ -246,7 +246,7 @@ Mọi mục dưới đây là hành vi CỦA BẢN GỐC được giữ lại c�
 - Bản gốc chỉ nạp dữ liệu: lúc `init()` (lần hiển thị app đầu) nếu hash là `#vehicle`, mỗi `hashchange` sang `#vehicle`, và sau lưu/xóa thành công. Không có setInterval, không nạp khi mount. Bản port: query `enabled: false` (chỉ đọc cache), `refresh(client)` dùng `fetchQuery` (gộp lời gọi trùng khi đang nạp, tương đương cờ `isLoading`); effect gọi `refresh` khi `useModuleEnabled('vehicle') && route === 'vehicle'`. `onSuccess` của mutation gọi `refresh()` tuần tự (vehicles rồi companies) thay vì `refetchQueries(['vehicle'])` song song, vì `loadCompanies` suy ra từ danh sách xe.
 - Hàm lọc dùng `extractDevId(v)` trả `'--'` khi thiếu thiết bị nên tìm `-` khớp những xe đó: giữ nguyên. `normalizeVehicle` luôn có `devIdno` truthy (`'--'`).
 - Sửa xe: form điền `devIdno = extractDevId(v)` nên có thể gửi `'--'` lên API; giữ nguyên. `editVehicle` gọi `editDevice.action` (đã có trong endpoints).
-- `<select>` loại xe/đơn vị: giá trị không có trong danh sách thì không chọn gì; FormData bỏ `vehiType` khi không có lựa chọn (`buildSavePayload`), `companyId` luôn gửi (có mục rỗng).
+- `<select>` loại xe/đơn vị: giá trị không có trong danh sách thì không chọn gì; FormData bỏ `vehiType` khi không có lựa chọn (`buildSavePayload`), `companyId` luôn gửi (có mục rỗng) trừ khi sửa xe có coId không nằm trong danh sách đơn vị (`deriveCompanies` bỏ id không tên): `select.value = coId` không chọn gì nên FormData bỏ `companyId` — `buildSavePayload(values, { companyUnmatched })` giữ đúng hành vi này (nếu người dùng chọn đơn vị thì vẫn gửi).
 - Bản gốc `onclick="...('${plate}')"` không escape biển số (hỏng/XSS khi có dấu nháy); JSX escape tự động. Nút sửa/xóa với biển số rỗng: sửa mở modal ở chế độ thêm, xóa mở modal nhưng "Xóa xe" không làm gì (như `!state.currentEditId`).
 - Validate chỉ có hai trường bắt buộc (không trim) và hiện bằng toast cảnh báo, không có lỗi theo trường. Trường `<input hidden name=vehiIdno>` trùng tên với ô biển số nên giá trị cuối (ô biển số) thắng: bỏ phần tử ẩn.
 
@@ -381,7 +381,7 @@ Bảng tóm tắt; chi tiết nằm ở mục 3 (cùng tính năng) hoặc ghi t
 | R2 | `authActions.showApp/showLogin` chỉ đổi store; `RootLayout` thực hiện navigate / refetch dashboard / `playbackInit` | Không đổi hành vi |
 | R3 | Task 4 tạo sẵn `AiToastStack.tsx` trả `null`, Task 15 thay bằng bản thật (nội bộ, không ảnh hưởng hành vi) | Không |
 | R4 | `playbackInit()` gọi mỗi lần showApp và một lần ở lần đăng nhập đầu, có guard; không gọi lúc tải app | Giống nguồn |
-| R5 | Không code-splitting/lazy import | Bundle đầu lớn hơn |
+| R5 | Không code-splitting/lazy import (ngoại lệ: devtools chỉ ở DEV trong main.tsx, không vào bundle production) | Bundle đầu lớn hơn |
 | R6 | Áp dụng best practice React khi không đổi hành vi (không định nghĩa component lồng, ternary thay `&&`, listener passive, state suy ra khi render, guard init-once, functional setState); KHÔNG cache đọc storage vì sẽ đổi ngữ nghĩa hết hạn token | Không đổi hành vi |
 | R7 | `client.ts` không export `getSecurityContext` nên `X-CSRF-Token` của auth luôn `""` | Giữ bug gốc |
 | R8 | `fetchApi` có thể reject khi lấy CSRF lỗi; consumer không nuốt lỗi | Giống gốc |
@@ -389,6 +389,7 @@ Bảng tóm tắt; chi tiết nằm ở mục 3 (cùng tính năng) hoặc ghi t
 | R10 | `shared/ui/toastStore` = `AppHelpers.showToast`; toast AI của event-server dùng `useAiToastStore/showAiToast` | Tên khác |
 | R11 | Click nav playback gọi `handleResize` sau 220 ms thuộc Task 12, không phải thiếu sót của Task 4 (nội bộ, không ảnh hưởng hành vi) | Không |
 | R12 | `RootLayout` khi showApp chỉ `refetchQueries(['dashboard','refresh'])` (gốc: `loadDashboardData` chỉ gọi `DashboardModule.refresh`); không kích lại realtime alarms lúc đăng nhập | Giống gốc |
+| R13 (mở rộng) | Popup/divIcon Leaflet vẫn là chuỗi HTML nhưng `uid`, thời gian, `sn`, hướng quay, màu icon (localStorage) được escape (`sanitizeHTML`/`attrEscape`) | Chặn XSS qua dữ liệu API/localStorage, không đổi hiển thị với dữ liệu hợp lệ |
 | R13 | Chuỗi bản gốc chèn bằng `innerHTML` (có/không escape) nay render qua JSX nên luôn được escape; popup Leaflet vẫn là chuỗi HTML | Loại XSS tiềm ẩn, hiển thị giống nhau với dữ liệu thường |
 | R14 | Dashboard `refresh()` chạy hai lần ở lần đăng nhập đầu như gốc | Giống gốc |
 | R15 | Mutation vehicle gọi `refresh(client)` tuần tự (vehicles rồi companies) thay vì `refetchQueries(['vehicle'])` | Giữ thứ tự/derive |
