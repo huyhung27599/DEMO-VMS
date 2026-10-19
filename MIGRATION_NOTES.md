@@ -342,3 +342,33 @@ Bản gốc giữ nguyên / ghi chú:
 - Địa chỉ (`p.addr`), tiêu đề nhật ký render bằng JSX (bản gốc `escapeHtml` → innerHTML) — tương đương; popup Leaflet (`buildSpeedTimePopup`) vẫn là chuỗi HTML như bản gốc (R13).
 - a11y: `.pb-timeline-item` thêm `role="button"`, `tabIndex=0`, Enter/Space; nút fullscreen cập nhật cả `aria-label` theo `title`.
 - CSS `:fullscreen` / `:-webkit-full-screen` tách thành hai rule (bản gốc gộp một selector list).
+
+### Task 14 — thống kê (events.js)
+
+Ánh xạ:
+
+- `events.js:ALARM_TYPES/ALARM_IDS/FILTER_TYPE_GROUPS/FILTER_TYPE_NAME_HINTS/VIOLATION_DISPLAY_NAMES/itemsPerPage` → `src/features/statistics/lib.ts:<cùng tên>` (`itemsPerPage` → `ITEMS_PER_PAGE`); `KNOWN_ALARM_CODES` là code chết (không ai dùng) → không port
+- `events.js:formatDt/toNum/normalizeCoord/normalizeSpeed/parseGpsStatusSpeed/parsePositionString/getViolationDisplayName/getEventSpeed/formatSpeedDisplay/mergeRowIntoEvent/findClosestAlarmRow/isSbacString/isBlobTypeString/pickRowField/isPlausibleAlarmCode/parseAlarmCodeFromSbacString/parseAlarmCodeValue/inferAlarmCodeFromName/getAlarmCode/getEventTimeSec/getApiSeverity/normalizeAlarmEvent/extractSafetyAlarmRows/evidenceInfoToAlarmRow/extractEvidenceAlarmRows/dedupeAlarmRows/needsEvidenceSupplement/alarmTypeMatchesFilter` → `src/features/statistics/lib.ts:<cùng tên>`
+- `events.js:getFilteredEvents` → `lib.ts:getFilteredEvents(allEvents, filterVal, term)` (thuần) + `loaders.ts:getFilteredEvents()` (đọc store như đọc DOM); `readTableFilterValue/readTableSearchValue` → `store.filterType` / `lib.ts:readTableSearchValue`; biến `currentFilter/searchTerm` chỉ là giá trị dự phòng khi thiếu DOM → không port
+- `events.js:exportCSV` → `lib.ts:exportCSV(events): string` (chuỗi CSV) + `loaders.ts:downloadCSV` (Blob `"\uFEFF" + csv`, `text/csv;charset=utf-8;`, `BaoCao_AI_PhuongTien_<yyyy-mm-dd>.csv`) + `loaders.ts:onExportClick` (toast "Không có dữ liệu để xuất")
+- `events.js:fetchSafetyAlarmRange/fetchMileageStats/loadStatistics/updateKPIs/updateLeaderboard/generateInsights/renderTable/applyTableFilters/init` → `src/features/statistics/loaders.ts:<cùng tên>` (`init` → `initStatistics`, guard `isInitialized` cấp module); listener trong `init` → `loaders.ts:onDateBtnClick/onCustomBtnClick/onCustomApplyClick/onPrevClick/onNextClick/onLeaderboardTypeChange/onFilterTypeChange/onSearchInput/closeEventModal`, gắn bằng JSX trong `components/*`
+- `events.js:openEventModal` → `loaders.ts:openEventModal` (ghi `store.modal`) + `components/EventModal.tsx` (`useQuery(eventEvidenceQueryOptions(event))`, chỉ bật khi modal mở); `renderEventModalMeta/renderEvidenceMediaHtml` → `EventModal.tsx:EventModalMeta/EvidenceMedia/EvidenceItem`
+- `events.js:pickEvidenceRowUrl/collectEvidenceArray/pushEvidenceFromQuery/getAuthToken/proxyFleetMediaUrl/fetchEventEvidenceBundle` → `src/features/statistics/evidence.ts:<cùng tên>`; phần chọn thẻ video → `evidence.ts:isVideoEvidenceUrl`
+- `events.js:initCharts/resizeCharts/updateCharts` + biến `trendChart/pieChart/barChart` → `src/features/statistics/chartsController.ts:StatisticsChartsController` (instance `statisticsCharts`); `main.js:168-170` (resizeCharts trong timer 150 ms của switchSection) → `onSectionShown('statistics', …)` trong `StatisticsSection.tsx`
+- Biến module `allEvents/currentPage/currentPeriod/isCustomDate/customStartDate/customEndDate` + nội dung DOM do các hàm render ghi (`#stat-last-update`, KPI, `#stat-leaderboard-list`, `#stat-events-tbody`, phân trang) → `src/features/statistics/store.ts:useStatisticsStore` (ảnh chụp chỉ đổi khi hàm gốc tương ứng chạy)
+- `main.js:AppHelpers.showLoader/hideLoader` + `#global-loader` → `src/shared/ui/loaderStore.ts:showLoader/hideLoader` + `src/shared/ui/GlobalLoader.tsx` (mount trong `AppShell` `<main>`)
+- `index.html:1090-1292` → `StatisticsSection.tsx` + `components/{DateFilter,KpiGrid,ChartsGrid,EventsTable,EventModal}.tsx`; `css/statistics.css` → Tailwind + `statistics.css` (`.stat-filter-select` = `.header-filter-select` có !important, `.stat-events-row`, `.stat-events-table` = `.live-vehicles-table`)
+
+Bản gốc giữ nguyên / ghi chú:
+
+- `loadStatistics` được gọi trực tiếp (không qua TanStack Query): chỉ chạy ở `init` (lần showApp đầu) và khi người dùng bấm nút ngày / "Áp dụng" / làm mới — không polling. Bấm nhiều lần chạy song song nhiều lần tải như bản gốc (không gộp/hủy); `allEvents` ghi giữa chừng nên `kmPer100` và bảng có thể dùng dữ liệu của lần tải khác — giữ nguyên.
+- `#stat-ai-insights` không có trong index.html → `generateInsights` luôn return ngay; port thành no-op.
+- `#stat-leaderboard-type` không có option `selected` → mặc định "Ít lỗi nhất" (`best`), dù code có fallback `'worst'`. Với `worst` mũi tên `fa-arrow-trend-up` màu xanh lá (`.lb-trend.up`), `best` mũi tên xuống màu đỏ — giữ nguyên.
+- "Áp dụng" tùy chọn ngày: `customStartDate/customEndDate` bị ghi TRƯỚC khi kiểm tra bắt đầu < kết thúc; nếu sai thì báo lỗi nhưng `isCustomDate` cũ vẫn giữ, lần làm mới sau dùng khoảng ngày sai — giữ nguyên.
+- Thanh phân trang/bảng chỉ cập nhật khi `renderTable` chạy (sau tải xong, đổi lọc/tìm kiếm, bấm Trước/Sau). Trước lần tải đầu: "Đang tải dữ liệu...", "Trang 1", nút Trước disabled, Sau enabled. `onNextClick` tính số trang từ `allEvents` hiện tại (có thể mới hơn bảng đang hiển thị).
+- `getAuthToken` đọc thẳng `sessionStorage` rồi `localStorage` key `dashcam_auth_token` (không qua `session.getToken`, không kiểm tra hạn "ghi nhớ").
+- `typeof ApiModule.queryAlarmEvidence === 'function'` luôn đúng → gọi không điều kiện.
+- `EventsModule` gắn listener `resize` lên window ở `init` và không bao giờ gỡ; controller gắn passive và gỡ khi unmount (StrictMode).
+- Modal bằng chứng: bản gốc không đóng khi click nền — giữ (không dùng `shared/ui/Modal`). Khác biệt nhỏ do dùng query: (1) mở A, đóng, mở B khi A chưa xong — bản gốc để kết quả A ghi đè modal B một lúc; bản mới chỉ hiển thị kết quả của sự kiện đang mở; (2) đóng rồi mở lại CÙNG sự kiện khi lần tải trước chưa xong → query gộp, chỉ một chuỗi lời gọi.
+- Tên xe, tên vi phạm, mức độ, vị trí, thời gian trong bảng/modal/xếp hạng hiển thị qua JSX (bản gốc `sanitizeHTML` → innerHTML) — tương đương; thông báo lỗi `err.message` cũng được escape (R13). `onerror` của ảnh (thay nội dung khung bằng "Không tải được ảnh") → state `imgFailed`.
+- `AppHelpers.showLoader/hideLoader` không đếm: lần tải xong đầu tiên ẩn loader dù lần khác còn chạy — giữ nguyên.

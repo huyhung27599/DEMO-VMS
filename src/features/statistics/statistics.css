@@ -1,0 +1,87 @@
+/*
+ * styles2.css:876-893 + 3762-3801 — .header-filter-select (#stat-leaderboard-type, #stat-custom-start/end).
+ * Giữ dạng CSS thường vì bản gốc dùng !important đè style inline (cao 38px, mũi tên dropdown áp cả
+ * cho ô datetime-local như bản gốc).
+ */
+.stat-filter-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.05rem;
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 2.5rem 0 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-main);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  cursor: pointer;
+}
+
+.stat-filter-select:hover {
+  border-color: rgba(42, 157, 216, 0.4);
+  background-color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.stat-filter-select:focus {
+  border-color: var(--color-primary);
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(42, 157, 216, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* statistics.css:84-91 */
+.stat-events-row {
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.stat-events-row:hover {
+  background-color: rgba(42, 157, 216, 0.05);
+}
+
+/* .live-vehicles-table (styles2.css:2574-2606) cho #stat-events-tbody */
+.stat-events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.stat-events-table thead th {
+  position: sticky;
+  top: 0;
+  background: #f8fafc;
+  padding: 0.5rem 0.65rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stat-events-table tbody td {
+  padding: 0.5rem 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--color-text-main);
+}
+
+.stat-events-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stat-events-table tbody tr:hover td {
+  background: rgba(42, 157, 216, 0.04);
+}

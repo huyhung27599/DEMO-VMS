@@ -8,6 +8,7 @@ import { PlaybackSection } from '../features/playback/PlaybackSection'
 import { SettingsSection } from '../features/settings/SettingsSection'
 import { StatisticsSection } from '../features/statistics/StatisticsSection'
 import { VehicleSection } from '../features/vehicle/VehicleSection'
+import { GlobalLoader } from '../shared/ui/GlobalLoader'
 import { LogoutConfirmModal } from './LogoutConfirmModal'
 import { Sidebar } from './Sidebar'
 import { useActiveSection } from './useActiveSection'
@@ -26,6 +27,7 @@ export function AppShell({ hidden }: { hidden: boolean }) {
       <Sidebar active={active} onLogoutClick={() => setLogoutOpen(true)} />
       <main className="relative flex flex-1 flex-col overflow-hidden bg-bg">
         {/* Thứ tự giống index.html */}
+        <GlobalLoader />
         <DashboardSection hidden={active !== 'dashboard'} />
         <LiveviewSection hidden={active !== 'liveview'} />
         <PlaybackSection hidden={active !== 'playback'} />
