@@ -1,9 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const bridgeRef = vi.hoisted(() => ({
+  current: null as null | { isAtLogin(): boolean; logout(reason?: string): void },
+}))
+
 vi.mock('../api/client', () => ({
   refreshCsrfToken: vi.fn(),
   clearSecurityContext: vi.fn(),
-  registerAuthBridge: vi.fn(),
+  registerAuthBridge: vi.fn((b) => {
+    bridgeRef.current = b
+  }),
   fetchApi: vi.fn(),
 }))
 vi.mock('../api/endpoints', () => ({ api: { login: vi.fn(), logout: vi.fn() } }))
@@ -128,6 +134,26 @@ describe('authActions.login', () => {
       error: 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.',
     })
   })
+  it('empty password -> error, no API', async () => {
+    expect(await authActions.login('u', '', false)).toEqual({
+      ok: false,
+      error: 'Vui lòng nhập tài khoản và mật khẩu.',
+    })
+    expect(api.login).not.toHaveBeenCalled()
+  })
+  it('thrown empty-message error -> fallback', async () => {
+    vi.mocked(api.login).mockRejectedValue(new Error(''))
+    expect(await authActions.login('u', 'p', false)).toEqual({
+      ok: false,
+      error: 'Đăng nhập thất bại.',
+    })
+  })
+  it('rememberMe true stores in localStorage', async () => {
+    vi.mocked(api.login).mockResolvedValue({ result: 0, jsession: 'j', account_name: 'A' })
+    expect(await authActions.login('u', 'p', true)).toEqual({ ok: true })
+    expect(localStorage.getItem('dashcam_auth_token')).toBe('j')
+    expect(localStorage.getItem('dashcam_auth_remember')).toBe('1')
+  })
   it('thrown error -> message', async () => {
     vi.mocked(api.login).mockRejectedValue(new Error('boom'))
     expect(await authActions.login('u', 'p', false)).toEqual({ ok: false, error: 'boom' })
@@ -158,6 +184,23 @@ describe('authActions.logout', () => {
     saveAuthSession('t', 'u', false)
     await authActions.logout('r')
     expect(useAuthStore.getState().view).toBe('login')
+  })
+})
+
+describe('auth bridge', () => {
+  it('is registered at import and tracks view', async () => {
+    const bridge = bridgeRef.current!
+    expect(bridge).not.toBeNull()
+    expect(bridge.isAtLogin()).toBe(true)
+    authActions.showApp('u')
+    expect(bridge.isAtLogin()).toBe(false)
+    vi.mocked(api.logout).mockResolvedValue({ result: 0 })
+    saveAuthSession('t', 'u', false)
+    bridge.logout('r')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(api.logout).toHaveBeenCalledTimes(1)
+    expect(useAuthStore.getState().logoutReason).toBe('r')
+    expect(bridge.isAtLogin()).toBe(true)
   })
 })
 
