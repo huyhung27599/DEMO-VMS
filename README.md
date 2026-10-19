@@ -1,78 +1,47 @@
-# React + TypeScript + Vite
+# frontend-reactjs
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Bản chuyển đổi giao diện quản trị dashcam (hệ thống quản lý tài xế) từ HTML/CSS/JS thuần (`../frontend`) sang React 19 + Vite + TypeScript + Tailwind v4 + TanStack Router/Query + Zustand. Mục tiêu chính là giữ nguyên hành vi của bản gốc (API, timer, storage key, chuỗi tiếng Việt, cả các bug gốc); `../frontend` chỉ để đối chiếu, không bị sửa.
 
-Currently, two official plugins are available:
+## Yêu cầu
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js (bản LTS mới)
+- pnpm
+- Backend (`../backend`) chạy ở cổng **4000** với `NODE_ENV=development`. Khi mở trang bằng `localhost` hoặc địa chỉ IP, ứng dụng gọi `http://<host>:4000/api/`.
 
-## React Compiler
+## Cài đặt và chạy
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+pnpm install          # thêm --ignore-workspace nếu pnpm nhận workspace ở thư mục cha
+pnpm dev              # http://localhost:5173
+pnpm test             # Vitest (jsdom)
+pnpm lint
+pnpm build && pnpm preview   # http://localhost:4173
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Đối chiếu tự động với bản gốc (chỉ đọc `../frontend/js`):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+node scripts/check-parity.mjs   # mong đợi dòng cuối: 0 missing
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Cấu trúc thư mục
 
 ```
+src/
+  app/        router (hash, tương thích URL cũ), khung ứng dụng, sidebar, RootLayout
+  features/   auth, dashboard, vehicle, driver, map, liveview, playback,
+              statistics, settings, event-server (mỗi tính năng: lib, queries/loaders, store, components)
+  shared/     api (fetchApi, endpoints), auth (session, inactivity, store), map (tile, lớp lãnh thổ),
+              query (QueryClient), ui (Button, Modal, toast, loader), lib
+  styles/     index.css (Tailwind v4 @theme)
+  test/       setup, mock Leaflet, tiện ích render
+scripts/      check-parity.mjs
+vite-plugins/ api404 (trả 404 cho /api/* ở dev và preview)
+docs/         specs và plans của đợt chuyển đổi
+```
+
+## Tài liệu
+
+- Thiết kế: [docs/specs](docs/specs/2026-10-19-frontend-reactjs-migration-design.md)
+- Kế hoạch: [docs/plans](docs/plans/2026-10-19-frontend-reactjs-migration.md)
+- Ánh xạ hàm gốc sang hàm mới, bug gốc được giữ, khác biệt có chủ đích và bảng kiểm chứng từng màn: [MIGRATION_NOTES.md](MIGRATION_NOTES.md)
