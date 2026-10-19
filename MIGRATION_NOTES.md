@@ -138,3 +138,44 @@ Bản gốc giữ nguyên / ghi chú:
 - `driver.js:updateTimestamp`, `pushFaceAlert` (dòng 41-44, 114-159) chưa port: chạm DOM (`#driver-last-update`, `#ai-alert-list`, `#ai-badge`, event `ai-face-alert`) và không được logic faceEvents gọi; để Task 8.
 - Fixture: `ai_events_raw_data_sample.json` là mẫu thô của safety alarm / identify alarm / evidence (dùng làm input mock). `ai_events_raw_output_actual.json` là phản hồi thô `{result, pagination, infos[]}` của API ảnh evidence (performanceReport...), KHÔNG phải output của `fetchIdentifyAlarmsMerged`; test dùng kỳ vọng suy từ code.
 - Hành vi gốc giữ nguyên: `buildVehicleMap` luôn gọi `queryUserVehicle` bằng `api` chung (không dùng tham số `a`), nên `fetchIdentifyAlarmsMerged` gọi `queryUserVehicle` hai lần; `enrichIdentifyRowPlate` và bước gán `devIdno` thay đổi trực tiếp object hàng nhận vào; `loadDriverMapping` dùng `fetch` trần, không gửi JWT/CSRF.
+
+### Task 8 — tài xế: giao diện
+
+Ánh xạ:
+
+- `frontend/js/driver.js:updateTimestamp` → `src/features/driver/store.ts:updateTimestamp`; closure `driversData/isLoadingDrivers` + innerHTML của `#driver-grid`, `#face-service-status`, `#face-events-summary`, `#face-events-grid` → `store.ts:useDriverStore` (`gridView`, `faceHealth`, `faceSummary`, `faceGrid`)
+- `driver.js:loadDrivers` → `queries.ts:loadDrivers` (phần mạng: `queries.ts:driversQueryOptions`, gọi qua `queryClient.fetchQuery`)
+- `driver.js:renderDrivers` → `store.ts:renderDrivers` + `components/DriverGrid.tsx` (+ `lib.ts:driverAvatarUrls`, `nextLocalAvatarSrc`)
+- `driver.js:showDeleteDriverConfirm` → `store.ts:showDeleteDriverConfirm/answerDeleteDriverConfirm` + `components/DeleteDriverModal.tsx`; handler `.btn-driver-delete` → `DriverSection.tsx:onDelete` + `mutations.ts:deleteDriver/useDeleteDriverMutation`
+- `driver.js:openFaceImageLightbox` → `store.ts:openFaceImageLightbox` + `components/FaceImageLightbox.tsx` (portal vào body)
+- `driver.js:checkFaceServiceHealth` (phần DOM) → `queries.ts:faceHealthQueryOptions/showFaceServiceHealth` + `components/FaceServiceBanner.tsx`
+- `driver.js:loadFaceEvents` → `queries.ts:faceEventsQueryOptions/loadFaceEvents`; `renderFaceEvents` → `components/FaceEventsTab.tsx` + `components/FaceEventCard.tsx`; `classifyFaceEvent` → `lib.ts:classifyFaceEvent`; phần geo → `lib.ts:faceEventGeoParts`
+- `driver.js` Flatpickr (fpConfig, 1518-1542) + `toApiDateTime` → `datePickerController.ts:DatePickerController/FP_CONFIG`
+- Tab switching, `#driver-search-input` → `DriverSection.tsx:onTabClick/onSearchInput` (+ `lib.ts:filterDrivers`); `#face-sync-btn` → `FaceServiceBanner.tsx:onSync`
+- Auto-init (MutationObserver + click nav + setTimeout 200) → `init.ts:initDriver/onDriverSectionShown`
+- `parseFacePhotoUrlToSlots/syncCurrentBase64FromPortraitSlots/updateTopPortraitPreview/renderPortraitGrid`, `#driver-photo-upload`, `#driver-portrait-slot-file`, click `#driver-portraitLibrary`, `openDriverModal/closeDriverModal` → `components/DriverFormModal.tsx` + `components/PortraitGrid.tsx` (+ `lib.ts:portraitServerDisplayUrl`), `store.ts:openDriverModal/closeDriverModal`
+- Handler `#btn-save-driver` → `mutations.ts:buildSaveDriverInput` (validate, payload) + `saveDriver/useSaveDriverMutation`
+- `window.appOpenDriverModal` → `store.ts:appOpenDriverModal` (không gắn lên `window`, không ai khác dùng)
+- `driver.js:pushFaceAlert` → `faceAlert.ts:pushFaceAlert`
+- `frontend/index.html:1347-1403, 438-555, 1450-1588`, `css/driver.css`, `.header-filter-select/.driver-modal-input` (styles2.css:3762-3801), tùy chỉnh Flatpickr (index.html:31-48) → `DriverSection.tsx`, `components/*` (Tailwind) + `driver.css`
+
+Bản gốc giữ nguyên / ghi chú:
+
+- Thời điểm nạp: bản gốc không nạp gì lúc tải trang ngoài Flatpickr; chỉ khi `#driver-section` hiển thị (MutationObserver ngay lập tức, click nav +50 ms, kiểm tra một lần +200 ms) mới gọi `buildVehicleMap + checkFaceServiceHealth + loadDrivers` (khi `driversData` rỗng và không đang nạp), hoặc `renderDrivers + checkFaceServiceHealth` (khi đã có dữ liệu, chỉ đường click nav). Bản port gộp ba đường vào `onSectionShown('driver')` (150 ms sau khi section hiện, chỉ khi app hiển thị) theo logic click nav. Khác biệt nhỏ: đổi hash bằng tay sang `#driver` khi đã có dữ liệu cũng re-render + kiểm tra AI service (bản gốc chỉ khi click nav). Không có setInterval nào.
+- `driversQueryOptions` có `initialData` = `drivers_cache`, `initialDataUpdatedAt: 0` theo brief, nhưng không dùng với `useQuery` (sẽ tự fetch lúc mount khi chưa có cache, bản gốc không làm). `loadDrivers()` đọc lại `drivers_cache` mỗi lần chạy (như bản gốc, kể cả sau khi sửa), hiện ngay, rồi `fetchQuery` (dữ liệu cache luôn "cũ" nên luôn gọi API) và ghi lại cache khi thành công. Cache không phải mảng: bỏ qua (bản gốc ném lỗi trong `renderDrivers` rồi bị catch).
+- Lỗi API thay cả lưới bằng thông báo (`Lỗi: …` / `Lỗi kết nối API: …`) dù đang hiện cache; `driversData` vẫn là cache nên không tự nạp lại.
+- Xóa tài xế: brief ghi "rồi refetch", nhưng bản gốc KHÔNG gọi lại API: chỉ lọc `driversData`, ghi `drivers_cache`, render lại. Bản port theo code gốc. Thứ tự: `queryUserVehicle` (findAllDevicesForDriver) → `bindDriver(devId, 0, '')` cho từng xe + chờ 1,5 s (nếu có xe gán) → `deleteDriver(id, jn)` → `deleteLocalDriver(jn, name)`. `id`/`jn` là chuỗi nội suy từ data-attribute (`'undefined'` nếu thiếu).
+- Sau khi xóa/thêm, lưới hiện toàn bộ `driversData` dù ô tìm kiếm còn chữ (bản gốc không áp lại bộ lọc). Bộ lọc `(d.jn || '').toLowerCase()` ném lỗi nếu `jn` là số: giữ nguyên.
+- Thêm mới: chèn tài xế dựng từ form lên đầu danh sách (id lấy từ phản hồi hoặc `_tmp_<ms>`), không nạp lại. Sửa: `loadDrivers()` (fire-and-forget). `mergeDriver` trả `res` null -> `res.msg` ném TypeError -> toast "Lỗi sự cố khi lưu: …" như bản gốc.
+- `currentBase64Photos` được suy ra từ các ô ảnh khi render. Bản gốc đặt `currentBase64Photos = []` ngay khi chọn file rồi mới đọc base64 (vài ms); nếu bấm Lưu trong khoảng đó bản gốc gửi không ảnh, bản port gửi ảnh cũ của các ô — bỏ qua.
+- Modal thêm/sửa: tiêu đề đặt bằng `textContent` nên mất icon `fa-user-plus` của markup — giữ (không icon). Modal không đóng khi click nền/Esc (bản gốc không có). Form mount lại mỗi lần mở (thay `form.reset()`).
+- Modal xác nhận xóa: Có / Hủy / nút X / click nền / Esc như bản gốc.
+- Nút `#driver-refresh-btn` không tồn tại trong index.html nên handler "Làm mới" (faceReloadDatabase + health + loadFaceEvents) của bản gốc là code chết: không port. Nút `#face-reload-db-mini` có trong markup nhưng không có handler: render nút không làm gì.
+- `#face-sync-btn`: sau lần đồng bộ đầu chữ đổi thành "Đồng bộ ảnh tài xế" (khác chữ ban đầu "Đồng bộ & Cập nhật AI"). Không try/catch: API reject thì nút kẹt ở "Đang đồng bộ...". Giữ nguyên.
+- Sự kiện khuôn mặt chỉ nạp khi bấm "Tìm kiếm" (không nạp khi đổi tab). `fetchQuery` gộp hai lần bấm trùng khoảng thời gian khi lần đầu chưa xong (bản gốc chạy hai lần); tương tự `faceHealthQueryOptions` gộp lời gọi health đồng thời.
+- `classifyFaceEvent` với nguồn localDb đọc `evt.match`, nhưng `mapLocalFaceLogToEvent` chỉ gán `faceMatch` → nhánh match/mismatch của localDb không bao giờ chạy (luôn "❓ Không xác định" hoặc "✅ Khớp tài xế" theo tên). `badge/badgeClass`, `srcLabel`, `localCount/upstreamCount/totalRecognitionCount` được tính nhưng không hiển thị. Giữ nguyên.
+- URL ảnh nhật ký cục bộ: `${BASE_URL}face/capture/…`; khi BASE_URL là đường dẫn tương đối, `firstPathFromField` ghép thành `https://fleetscontrol.com/api/face/capture/…` (hành vi gốc).
+- R13: tên tài xế / SĐT / mã NV trong thẻ, `dn` trong sự kiện… bản gốc chèn bằng innerHTML (một số không escape), bản port render qua JSX (escape). `escapeHtml` trong `src`/`data-image` của bản gốc chỉ là escape thuộc tính (trình duyệt giải mã lại) nên JSX dùng URL thô là tương đương.
+- `pushFaceAlert` không được gọi ở đâu trong bản gốc (code chết). Bản port giữ phần tạo alert + `window.dispatchEvent('ai-face-alert')`; phần chèn trực tiếp `<li>` vào `#ai-alert-list` và tăng `#ai-badge` của liveview không port (liveview chưa có; nếu cần thì lắng nghe event).
+- Flatpickr khởi tạo trong effect của tab sự kiện (mount lúc tải trang, như DOMContentLoaded); `now`/`startDay` tính lúc đó. `DatePickerController.toApiDateTime` dùng instance Flatpickr, fallback như bản gốc khi không có instance.
+- Các nút xóa: bản gốc render lại cả lưới sau khi xóa thành công (reset trạng thái spinner của các nút khác đang xóa); bản port chỉ bỏ trạng thái của thẻ vừa xóa.

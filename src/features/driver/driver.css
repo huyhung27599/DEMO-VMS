@@ -1,0 +1,67 @@
+/*
+ * styles2.css:3762-3801 — .header-filter-select / .driver-modal-input (kể cả mũi tên dropdown và chiều cao 38px
+ * áp cả cho ô text/file/date, như bản gốc). Giữ dạng CSS thường vì bản gốc dùng !important đè style inline.
+ */
+.driver-filter-input,
+.driver-modal-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1.05rem;
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 2.5rem 0 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--color-text-main);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.driver-modal-input {
+  width: 100%;
+}
+
+.driver-filter-input:hover,
+.driver-modal-input:hover {
+  border-color: rgba(42, 157, 216, 0.4);
+  background-color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.driver-filter-input:focus,
+.driver-modal-input:focus {
+  border-color: var(--color-primary);
+  background-color: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(42, 157, 216, 0.12),
+    0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+/* index.html:31-48 — tùy chỉnh Flatpickr toàn cục */
+.flatpickr-calendar {
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 12px !important;
+}
+.flatpickr-day.selected {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+.flatpickr-time input:focus {
+  background: rgba(42, 157, 216, 0.05) !important;
+}
+.flatpickr-am-pm {
+  font-weight: 700 !important;
+  color: var(--color-primary) !important;
+}

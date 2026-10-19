@@ -459,3 +459,252 @@ export const parseDateInputToUtcMs = (dateStr: Loose): number | null => {
   // Interpret input date as local midnight so the displayed yyyy-mm-dd stays stable.
   return new Date(y, m - 1, d, 0, 0, 0, 0).getTime()
 }
+
+// ─── Task 8: helper thuần tách từ renderDrivers / renderFaceEvents / renderPortraitGrid ───
+
+/**
+ * driver.js:970-1007 (renderDrivers): URL avatar của thẻ tài xế.
+ * `finalFaceUrl`: facePhotoUrl upstream (qua proxy); `localFaceUrl`: ảnh known_faces cục bộ (face_1.jpg).
+ */
+export const driverAvatarUrls = (
+  d: Loose,
+  baseUrl: string,
+  driverMapping: Loose,
+): { finalFaceUrl: string; localFaceUrl: string } => {
+  const name = d.dn || 'Chưa rõ tên'
+  let finalFaceUrl = ''
+  const rawFacePhotoUrl = d.facePhotoUrl || d.faceUrl || d.photoUrl || ''
+  if (typeof rawFacePhotoUrl === 'string' && rawFacePhotoUrl.trim()) {
+    try {
+      const urls = rawFacePhotoUrl
+        .split(';')
+        .map((u) => u.trim())
+        .filter((u) => u && u.length > 3)
+      if (urls.length > 0) {
+        let firstUrl = urls[0]
+        if (firstUrl.startsWith('/')) {
+          firstUrl = `https://fleetscontrol.com${firstUrl}`
+        } else if (!firstUrl.startsWith('http')) {
+          firstUrl = `https://fleetscontrol.com/${firstUrl}`
+        }
+        finalFaceUrl = toDisplayableImageUrl(firstUrl)
+      }
+    } catch (urlErr) {
+      console.warn('[driver.js] Error parsing facePhotoUrl for', name, urlErr)
+    }
+  }
+
+  let localFaceUrl = ''
+  if (!finalFaceUrl && baseUrl) {
+    const jobNum = String(d.jn || d.idno || d.id || '').trim()
+    const dn = String(d.dn || '').trim()
+    if (jobNum && dn) {
+      const mappedName =
+        driverMapping && driverMapping[jobNum] != null && String(driverMapping[jobNum]).trim()
+          ? String(driverMapping[jobNum]).trim()
+          : dn
+      const safeName = mappedName.replace(/ /g, '_').replace(/\//g, '_')
+      const folderName = `${jobNum}_${safeName}`
+      localFaceUrl = `${baseUrl}driver/photo/${encodeURIComponent(folderName)}/face_1.jpg`
+    }
+  }
+  return { finalFaceUrl, localFaceUrl }
+}
+
+/** driver.js:1015 onerror của ảnh cục bộ: face_1.jpg → face.jpg → face_2.jpg → '' (placeholder). */
+export const nextLocalAvatarSrc = (s: string): string => {
+  if (s.includes('/face_1.jpg')) return s.replace('/face_1.jpg', '/face.jpg')
+  if (s.includes('/face.jpg')) return s.replace('/face.jpg', '/face_2.jpg')
+  return ''
+}
+
+/** driver.js:1714-1717, 1755-1758: path ảnh chân dung server → URL hiển thị được. */
+export const portraitServerDisplayUrl = (serverRaw: string): string => {
+  let u = serverRaw
+  if (u.startsWith('/')) u = `https://fleetscontrol.com${u}`
+  else if (!u.startsWith('http')) u = `https://fleetscontrol.com/${u}`
+  return toDisplayableImageUrl(u)
+}
+
+export type FaceEventClass = {
+  kind: 'empty' | 'unknown' | 'match' | 'mismatch'
+  /** statusHtml gốc = <span style="color:…;font-weight:600;">text</span> */
+  statusText: string
+  statusColor: string
+  badge: string
+  badgeClass: string
+}
+
+const C_MUTED = 'var(--color-text-muted)'
+const C_UNKNOWN = '#d97706'
+const C_MATCH = '#10b981'
+const C_MISMATCH = '#ef4444'
+
+/** driver.js:1290-1431 classifyFaceEvent (bên trong renderFaceEvents). badge/badgeClass không được render (như bản gốc). */
+export const classifyFaceEvent = (evt: Loose): FaceEventClass => {
+  const dn = String(evt.driverName || evt.dn || '').trim()
+  const isEmptyName = !dn || dn === '—'
+  const isUnknownName =
+    isEmptyName ||
+    /^unknown$/i.test(dn) ||
+    dn === '0' ||
+    dn.startsWith('Người lạ') ||
+    dn === 'Cabin không có khuôn mặt'
+
+  const score = extractSimilarityPct(evt)
+
+  if (evt._source === 'localDb') {
+    if (evt.faceCount === 0) {
+      return {
+        kind: 'empty',
+        statusText: 'Không có khuôn mặt trong cabin',
+        statusColor: C_MUTED,
+        badge: '—',
+        badgeClass: 'empty',
+      }
+    }
+    if (evt.match === true && isUnknownName) {
+      return {
+        kind: 'unknown',
+        statusText: '❓ Không xác định (có khuôn mặt, chưa gán tài xế)',
+        statusColor: C_UNKNOWN,
+        badge: score != null ? `${score}%` : '?',
+        badgeClass: 'unknown',
+      }
+    }
+    if (evt.match === true && !isUnknownName) {
+      return {
+        kind: 'match',
+        statusText: '✅ Khớp tài xế (ảnh trong database)',
+        statusColor: C_MATCH,
+        badge: score != null ? `${score}%` : '✓',
+        badgeClass: '',
+      }
+    }
+    if (evt.match === false && isUnknownName) {
+      return {
+        kind: 'unknown',
+        statusText: '❓ Không xác định — có mặt nhưng không khớp DB',
+        statusColor: C_UNKNOWN,
+        badge: score != null ? `${score}%` : '?',
+        badgeClass: 'unknown',
+      }
+    }
+    if (evt.match === false) {
+      return {
+        kind: 'mismatch',
+        statusText: '⛔ Không khớp tài xế đăng ký',
+        statusColor: C_MISMATCH,
+        badge: score != null ? `${score}%` : '✗',
+        badgeClass: 'low-match',
+      }
+    }
+    if (isUnknownName) {
+      return {
+        kind: 'unknown',
+        statusText: '❓ Không xác định',
+        statusColor: C_UNKNOWN,
+        badge: score != null ? `${score}%` : '?',
+        badgeClass: 'unknown',
+      }
+    }
+    return {
+      kind: 'match',
+      statusText: '✅ Khớp tài xế',
+      statusColor: C_MATCH,
+      badge: score != null ? `${score}%` : '✓',
+      badgeClass: '',
+    }
+  }
+
+  const explicitMatch =
+    evt.isDriverMatch === true ||
+    evt.faceMatch === true ||
+    evt.matchDriver === true ||
+    evt.matchResult === 1 ||
+    evt.matchResult === true
+  const explicitFail =
+    evt.isDriverMatch === false ||
+    evt.faceMatch === false ||
+    evt.matchDriver === false ||
+    evt.matchResult === 0 ||
+    evt.matchResult === '0'
+
+  if (explicitMatch && !isUnknownName) {
+    return {
+      kind: 'match',
+      statusText: '✅ Khớp tài xế',
+      statusColor: C_MATCH,
+      badge: score != null ? `${score}%` : '✓',
+      badgeClass: '',
+    }
+  }
+  if (explicitFail && isUnknownName) {
+    return {
+      kind: 'unknown',
+      statusText: '❓ Không xác định (không có trong danh sách tài xế)',
+      statusColor: C_UNKNOWN,
+      badge: score != null ? `${score}%` : '?',
+      badgeClass: 'unknown',
+    }
+  }
+  if (explicitFail) {
+    return {
+      kind: 'mismatch',
+      statusText: '⛔ Không khớp tài xế đăng ký',
+      statusColor: C_MISMATCH,
+      badge: score != null ? `${score}%` : '✗',
+      badgeClass: 'low-match',
+    }
+  }
+  if (score != null && score >= 75 && !isUnknownName) {
+    return {
+      kind: 'match',
+      statusText: '✅ Khớp tài xế (theo điểm số)',
+      statusColor: C_MATCH,
+      badge: `${score}%`,
+      badgeClass: '',
+    }
+  }
+  if (isUnknownName || score == null) {
+    return {
+      kind: 'unknown',
+      statusText: '❓ Không xác định',
+      statusColor: C_UNKNOWN,
+      badge: score != null ? `${score}%` : '?',
+      badgeClass: 'unknown',
+    }
+  }
+  return {
+    kind: 'mismatch',
+    statusText: '⛔ Không khớp / độ tin cậy thấp',
+    statusColor: C_MISMATCH,
+    badge: `${score}%`,
+    badgeClass: 'low-match',
+  }
+}
+
+/** driver.js:1458-1467: các phần "GPS: …" / "Vị trí: …" ở footer thẻ sự kiện (bỏ tiền tố &nbsp;|&nbsp;). */
+export const faceEventGeoParts = (evt: Loose): string[] => {
+  const parts: string[] = []
+  if (evt.blat != null && evt.blng != null) {
+    const la = Number(evt.blat) / 1e6
+    const ln = Number(evt.blng) / 1e6
+    if (!Number.isNaN(la) && !Number.isNaN(ln) && Math.abs(la) <= 90 && Math.abs(ln) <= 180) {
+      parts.push(`GPS: ${la.toFixed(5)}, ${ln.toFixed(5)}`)
+    }
+  }
+  if (evt.position) {
+    parts.push(`Vị trí: ${String(evt.position)}`)
+  }
+  return parts
+}
+
+/** driver.js:1590-1597 (#driver-search-input). `(d.jn || '').toLowerCase()` ném lỗi nếu jn là số — giữ nguyên. */
+export const filterDrivers = (driversData: Loose[], term: string): Loose[] =>
+  driversData.filter(
+    (d) =>
+      (d.dn || '').toLowerCase().includes(term) ||
+      (d.jn || '').toLowerCase().includes(term) ||
+      (d.cn || '').toLowerCase().includes(term),
+  )
