@@ -1,0 +1,59 @@
+{
+  "safety_alarm_sample": {
+    "desc": "Dữ liệu thô từ StandardApiAction_querySafetyAlarm.action (ADAS/DSM)",
+    "result": 0,
+    "alarms": [
+      {
+        "guid": "87c4d5e1-2b3a-4f5d-9e6a-7b8c9d0e1f2a",
+        "devId": "30009",
+        "st": 1712028600,
+        "ty": "622",
+        "armType": "622",
+        "alarmType": "622",
+        "typeName": "Hút thuốc L1",
+        "blat": 21021450,
+        "blng": 105841235,
+        "vehiIdno": "29H-123.45",
+        "armUrl": "http://evidence-server.com/photo/20260402/30009_622_1.jpg"
+      },
+      {
+        "guid": "5a4b3c2d-1e0f-4d3c-b2a1-0987654321fe",
+        "devId": "30009",
+        "st": 1712028540,
+        "ty": "620",
+        "armType": "620",
+        "alarmType": "620",
+        "typeName": "Nghe điện thoại L1",
+        "blat": 21021500,
+        "blng": 105841300,
+        "vehiIdno": "29H-123.45"
+      }
+    ]
+  },
+  "identify_alarm_sample": {
+    "desc": "Dữ liệu thô từ StandardApiAction_queryIdentifyAlarm.action (Nhận dạng tài xế)",
+    "result": 0,
+    "alarms": [
+      {
+        "guid": "f1e2d3c4-b5a6-9876-5432-10abcdef1234",
+        "devId": "30009",
+        "st": 1712028000,
+        "ty": "643",
+        "driverName": "Nguyễn Văn Trường (8899)",
+        "dn": "Nguyễn Văn Trường",
+        "vehiIdno": "29H-123.45"
+      }
+    ]
+  },
+  "evidence_media_sample": {
+    "desc": "Dữ liệu mẫu từ StandardApiAction_querySafetyEvidence.action",
+    "result": 0,
+    "photos": [
+      {
+        "file": "http://localhost:4000/api/driver/photo/8899/face_1.jpg",
+        "mediaType": 0,
+        "time": "2026-04-02 10:30:00"
+      }
+    ]
+  }
+}
