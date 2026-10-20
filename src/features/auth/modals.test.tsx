@@ -7,6 +7,7 @@ import { ToastContainer } from '../../shared/ui/ToastContainer'
 import { useToastStore } from '../../shared/ui/toastStore'
 import { ChangePasswordModal } from './ChangePasswordModal'
 import { ForgotPasswordModal } from './ForgotPasswordModal'
+import { ResetPasswordModal } from './ResetPasswordModal'
 import { ResetRequestModal } from './ResetRequestModal'
 import { LogoutConfirmModal } from '../../app/LogoutConfirmModal'
 import { openChangePasswordModal, useChangePasswordModalStore } from './store'
@@ -194,12 +195,21 @@ describe('ResetRequestModal (auth.js:214-284)', () => {
     return { ...r, form, error, success, onClose }
   }
 
-  it('rỗng -> "Vui lòng nhập tên tài khoản."', async () => {
+  it('rỗng -> "Vui lòng nhập tài khoản hoặc email"', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const { form, error } = await setup()
     fill('reset-username', '   ')
     fireEvent.submit(form)
-    expect(error).toHaveTextContent('Vui lòng nhập tên tài khoản.')
+    expect(error).toHaveTextContent('Vui lòng nhập tài khoản hoặc email')
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  it('email sai định dạng -> "Email không đúng định dạng"', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const { form, error } = await setup()
+    fill('reset-username', 'not-an-email@')
+    fireEvent.submit(form)
+    expect(error).toHaveTextContent('Email không đúng định dạng')
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
@@ -228,7 +238,7 @@ describe('ResetRequestModal (auth.js:214-284)', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('lỗi -> msg server hoặc "Không thể gửi yêu cầu."; nút về "Gửi yêu cầu"', async () => {
+  it('lỗi -> msg server hoặc "Không thể gửi yêu cầu."; nút về "Xác nhận"', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ result: 1, msg: 'Không tồn tại' })))
@@ -236,11 +246,51 @@ describe('ResetRequestModal (auth.js:214-284)', () => {
     fill('reset-username', 'u')
     fireEvent.submit(form)
     await waitFor(() => expect(error).toHaveTextContent('Không tồn tại'))
-    expect(document.getElementById('btn-submit-reset-request')).toHaveTextContent('Gửi yêu cầu')
+    expect(document.getElementById('btn-submit-reset-request')).toHaveTextContent('Xác nhận')
     fetchSpy.mockResolvedValueOnce(new Response(JSON.stringify({ result: 1 })))
     fill('reset-username', 'u')
     fireEvent.submit(form)
     await waitFor(() => expect(error).toHaveTextContent('Không thể gửi yêu cầu.'))
+  })
+})
+
+describe('ResetPasswordModal (SRS §3.1 UI)', () => {
+  const STRONG8 = 'Abcdef1!'
+
+  async function setup(open = true) {
+    const onClose = vi.fn()
+    const r = renderWithProviders(<ResetPasswordModal open={open} onClose={onClose} />)
+    await waitFor(() => expect(document.getElementById('reset-password-form')).toBeInTheDocument())
+    const form = document.getElementById('reset-password-form') as HTMLFormElement
+    const error = document.getElementById('reset-password-error') as HTMLElement
+    return { ...r, form, error, onClose }
+  }
+
+  it('mismatch -> "Mật khẩu xác nhận không khớp"', async () => {
+    const { form, error } = await setup()
+    fill('rp-new-password', STRONG8)
+    fill('rp-confirm-password', 'Abcdef2!')
+    fireEvent.submit(form)
+    expect(error).toHaveTextContent('Mật khẩu xác nhận không khớp')
+  })
+
+  it('hợp lệ -> hiện success rồi gọi onClose', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { form, onClose } = await setup()
+    fill('rp-new-password', STRONG8)
+    fill('rp-confirm-password', STRONG8)
+    fireEvent.submit(form)
+    expect(await screen.findByText('Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500)
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('Hủy bỏ gọi onClose', async () => {
+    const { onClose } = await setup()
+    fireEvent.click(document.getElementById('btn-cancel-reset-password')!)
+    expect(onClose).toHaveBeenCalled()
   })
 })
 

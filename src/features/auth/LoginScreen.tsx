@@ -4,6 +4,7 @@ import { hasPersistentSession } from '../../shared/auth/session'
 import { Button } from '../../shared/ui/Button'
 import { playbackInit } from '../playback/init'
 import { useLoginMutation } from './mutations'
+import { ResetPasswordModal } from './ResetPasswordModal'
 import { ResetRequestModal } from './ResetRequestModal'
 import { firstError, loginSchema } from './schemas'
 
@@ -14,7 +15,6 @@ const LOGIN_BG =
   "linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%), url('/images/login-bg.jpg') no-repeat center center / cover"
 
 function EyeIcon({ open }: { open: boolean }) {
-  // auth.js:582-584
   return (
     <svg
       className="size-5"
@@ -41,30 +41,39 @@ function EyeIcon({ open }: { open: boolean }) {
   )
 }
 
+function readResetToken(): string {
+  return new URLSearchParams(window.location.search).get('resetToken')?.trim() ?? ''
+}
+
+function clearResetTokenFromUrl(): void {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('resetToken')) return
+  url.searchParams.delete('resetToken')
+  const next = `${url.pathname}${url.search}${url.hash}`
+  window.history.replaceState(window.history.state, '', next)
+}
+
 const inputClass =
-  'w-full rounded-md border border-border py-3.5 pr-10 pl-12 font-sans text-base transition-[border-color,box-shadow] duration-250 focus:border-primary focus:shadow-[0_0_0_3px_rgba(42,157,216,0.15)] focus:outline-none'
+  'w-full rounded-lg border border-border bg-white py-3.5 pr-11 pl-12 font-sans text-[0.95rem] text-text-main transition-[border-color,box-shadow] duration-250 placeholder:text-[#94a3b8] focus:border-primary focus:shadow-[0_0_0_3px_rgba(42,157,216,0.15)] focus:outline-none'
 const iconClass = 'pointer-events-none absolute left-4 size-5 text-[#94a3b8]'
 
 /**
- * #login-container (index.html:55-163) + handleLogin (auth.js:160-212)
- * + phần giao diện của showLogin (main.js:99-131).
+ * #login-container — SRS §3.1 màn hình đăng nhập (giữ hero trái, tinh chỉnh form phải).
  */
 export function LoginScreen({ hidden }: { hidden: boolean }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  // auth.js:570-573 — khôi phục checkbox lúc init
   const [rememberMe, setRememberMe] = useState(() => hasPersistentSession())
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const [btn, setBtn] = useState({ disabled: false, label: 'ĐĂNG NHẬP' })
+  const [btn, setBtn] = useState({ disabled: false, label: 'Đăng nhập' })
   const [resetOpen, setResetOpen] = useState(false)
   const [resetKey, setResetKey] = useState(0)
+  const [resetPasswordOpen, setResetPasswordOpen] = useState(() => Boolean(readResetToken()))
   const loginMutation = useLoginMutation()
-  // main.js:100 isAlreadyVisible — login-container đang hiển thị do lần showLogin trước
   const loginVisibleRef = useRef(false)
 
   useEffect(() => {
-    // Mỗi lần store đổi = một lời gọi showApp/showLogin (authStore chỉ có hai setter này).
     return useAuthStore.subscribe((state) => {
       if (state.view === 'app') {
         loginVisibleRef.current = false
@@ -73,20 +82,29 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
       const reason = state.logoutReason
       if (!loginVisibleRef.current) {
         setError(reason)
-        // document.getElementById('login-form').reset()
         setUsername('')
         setPassword('')
         setRememberMe(false)
       } else if (reason) {
-        // Nếu đã hiển thị mà có lỗi mới thì chỉ cập nhật text báo lỗi
         setError(reason)
       }
       loginVisibleRef.current = true
-      // auth.js:467-468 logout() luôn xóa ô mật khẩu
       setPassword('')
       setBtn({ disabled: false, label: 'Đăng nhập' })
     })
   }, [])
+
+  useEffect(() => {
+    const syncToken = () => setResetPasswordOpen(Boolean(readResetToken()))
+    syncToken()
+    window.addEventListener('popstate', syncToken)
+    return () => window.removeEventListener('popstate', syncToken)
+  }, [])
+
+  const closeResetPassword = () => {
+    setResetPasswordOpen(false)
+    clearResetTokenFromUrl()
+  }
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -110,13 +128,12 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
       }
     } else {
       setError(result.error)
-      setBtn({ disabled: false, label: 'ĐĂNG NHẬP' })
+      setBtn({ disabled: false, label: 'Đăng nhập' })
     }
   }
 
   const openResetRequest = (e: MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
-    // clearResetRequestForm + setResetModalVisible(true): remount để xóa form
     setResetKey((k) => k + 1)
     setResetOpen(true)
   }
@@ -144,19 +161,22 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
         </div>
         <div className="relative flex flex-1 flex-col items-center justify-center overflow-clip bg-[#f8fafc] max-[768px]:min-h-screen">
           <div className="absolute top-6 right-8 z-10 flex items-center justify-end gap-6 p-2 font-medium text-text-main max-[768px]:top-2 max-[768px]:right-2">
-            <div className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-4 py-2 text-base font-semibold shadow-sm">
+            <div className="flex cursor-pointer items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-black/5">
               <img src="https://flagcdn.com/w20/vn.png" alt="VN" className="h-auto w-5" /> VN/EN
             </div>
           </div>
 
-          <div className="mx-auto flex max-h-[95vh] w-[90%] max-w-[480px] shrink flex-col justify-center rounded-[12px] bg-white px-[clamp(1.5rem,5vw,3rem)] py-[clamp(1.5rem,4vh,3rem)] shadow-[0_20px_40px_rgba(0,0,0,0.05)]">
-            <h1 className="mb-[clamp(0.25rem,1vh,0.5rem)] text-center text-[clamp(1.25rem,3vh,1.75rem)] font-bold text-text-main">
-              ĐĂNG NHẬP
-            </h1>
-            <form id="login-form" onSubmit={handleLogin}>
-              <div className="mb-[clamp(0.875rem,2.5vh,1.5rem)]">
-                <label htmlFor="username" className="mb-2 block text-[0.9rem] font-semibold text-text-main">
-                  Tài khoản (Username)
+          <div className="mx-auto flex max-h-[95vh] w-[90%] max-w-[440px] shrink flex-col justify-center rounded-2xl bg-white px-[clamp(1.5rem,5vw,2.75rem)] py-[clamp(1.75rem,4vh,2.75rem)] shadow-[0_20px_40px_rgba(15,23,42,0.06)] ring-1 ring-black/4">
+            <div className="mb-[clamp(1.25rem,3vh,1.75rem)] text-center">
+              <h1 className="m-0 text-[clamp(1.35rem,3vh,1.65rem)] font-bold tracking-tight text-text-main">
+                Đăng nhập
+              </h1>
+              <p className="mt-2 mb-0 text-sm text-text-muted">Nhập thông tin tài khoản để truy cập VMS</p>
+            </div>
+            <form id="login-form" onSubmit={handleLogin} noValidate>
+              <div className="mb-[clamp(0.875rem,2.5vh,1.25rem)]">
+                <label htmlFor="username" className="mb-2 block text-[0.875rem] font-semibold text-text-main">
+                  Tên đăng nhập
                 </label>
                 <div className="relative flex items-center">
                   <svg
@@ -179,14 +199,15 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
                     required
                     aria-required="true"
                     autoComplete="username"
+                    placeholder="Nhập tên đăng nhập"
                     className={inputClass}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
               </div>
-              <div className="mb-[clamp(0.875rem,2.5vh,1.5rem)]">
-                <label htmlFor="password" className="mb-2 block text-[0.9rem] font-semibold text-text-main">
+              <div className="mb-[clamp(0.875rem,2.5vh,1.25rem)]">
+                <label htmlFor="password" className="mb-2 block text-[0.875rem] font-semibold text-text-main">
                   Mật khẩu
                 </label>
                 <div className="relative flex items-center">
@@ -210,6 +231,7 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
                     required
                     aria-required="true"
                     autoComplete="current-password"
+                    placeholder="Nhập mật khẩu"
                     className={inputClass}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -225,7 +247,7 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
                 </div>
               </div>
 
-              <div className="mb-[clamp(1rem,3vh,2rem)] flex items-center justify-between text-[0.9rem]">
+              <div className="mb-[clamp(1rem,3vh,1.5rem)] flex items-center justify-between text-[0.875rem]">
                 <label className="flex cursor-pointer items-center gap-2 text-text-muted">
                   <input
                     type="checkbox"
@@ -233,14 +255,14 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
                     name="rememberMe"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
-                    className="focus-visible:outline-2 focus-visible:outline-primary"
+                    className="size-4 rounded border-border accent-primary focus-visible:outline-2 focus-visible:outline-primary"
                   />{' '}
                   Ghi nhớ đăng nhập
                 </label>
                 <a
                   href="#"
                   id="reset-request-link"
-                  className="font-medium text-primary no-underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-primary"
+                  className="font-medium text-primary no-underline hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-primary"
                   onClick={openResetRequest}
                 >
                   Quên mật khẩu?
@@ -259,6 +281,7 @@ export function LoginScreen({ hidden }: { hidden: boolean }) {
         </div>
       </div>
       <ResetRequestModal key={resetKey} open={resetOpen} onClose={() => setResetOpen(false)} />
+      <ResetPasswordModal open={resetPasswordOpen} onClose={closeResetPassword} />
     </>
   )
 }

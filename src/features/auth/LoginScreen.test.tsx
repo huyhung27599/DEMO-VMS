@@ -9,6 +9,7 @@ beforeEach(() => {
   localStorage.clear()
   sessionStorage.clear()
   useAuthStore.setState({ view: 'login', username: '', logoutReason: '', hasShownApp: false })
+  window.history.replaceState({}, '', window.location.pathname)
 })
 
 afterEach(() => {
@@ -30,15 +31,18 @@ async function setup() {
 }
 
 describe('LoginScreen', () => {
-  it('submit rỗng (hoặc username toàn khoảng trắng) -> thông báo, không gọi login', async () => {
+  it('submit rỗng (hoặc username toàn khoảng trắng) -> thông báo SRS, không gọi login', async () => {
     const login = vi.spyOn(authActions, 'login')
     const { form, user, pass, error, btn } = await setup()
     fireEvent.submit(form)
-    expect(error).toHaveTextContent('Vui lòng nhập tài khoản và mật khẩu.')
+    expect(error).toHaveTextContent('Vui lòng nhập Tài khoản')
+    fireEvent.change(user, { target: { value: 'admin' } })
+    fireEvent.submit(form)
+    expect(error).toHaveTextContent('Vui lòng nhập Mật khẩu')
     fireEvent.change(user, { target: { value: '   ' } })
     fireEvent.change(pass, { target: { value: 'x' } })
     fireEvent.submit(form)
-    expect(error).toHaveTextContent('Vui lòng nhập tài khoản và mật khẩu.')
+    expect(error).toHaveTextContent('Vui lòng nhập Tài khoản')
     expect(login).not.toHaveBeenCalled()
     expect(btn).not.toBeDisabled()
   })
@@ -60,7 +64,7 @@ describe('LoginScreen', () => {
     await act(async () => resolve({ ok: false, error: 'x' }))
   })
 
-  it("lỗi: nút về 'ĐĂNG NHẬP', ô mật khẩu bị xóa, hiện thông báo lỗi", async () => {
+  it("lỗi: nút về 'Đăng nhập', ô mật khẩu bị xóa, hiện thông báo lỗi", async () => {
     vi.spyOn(authActions, 'login').mockResolvedValue({ ok: false, error: 'Sai mật khẩu' })
     const { form, user, pass, btn, error } = await setup()
     fireEvent.change(user, { target: { value: 'admin' } })
@@ -68,9 +72,21 @@ describe('LoginScreen', () => {
     fireEvent.submit(form)
     await waitFor(() => expect(error).toHaveTextContent('Sai mật khẩu'))
     expect(btn).not.toBeDisabled()
-    expect(btn.textContent?.trim()).toBe('ĐĂNG NHẬP')
+    expect(btn.textContent?.trim()).toBe('Đăng nhập')
     expect(pass.value).toBe('')
     expect(user.value).toBe('admin')
+  })
+
+  it('?resetToken=demo mở modal đặt lại mật khẩu; đóng thì xóa query', async () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('resetToken', 'demo')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}`)
+    await setup()
+    const modal = document.getElementById('reset-password-modal') as HTMLElement
+    expect(modal).toHaveAttribute('aria-hidden', 'false')
+    fireEvent.click(document.getElementById('btn-cancel-reset-password')!)
+    expect(modal).toHaveAttribute('aria-hidden', 'true')
+    expect(new URLSearchParams(window.location.search).get('resetToken')).toBeNull()
   })
 
   it("showLogin luôn đặt nhãn nút 'Đăng nhập' (main.js:126-130)", async () => {

@@ -4,7 +4,7 @@ import { Modal, ModalBody, ModalFooter, ModalHeader, modalInputClass, modalLabel
 import { errorMessage, useResetRequestMutation } from './mutations'
 import { firstError, resetRequestSchema } from './schemas'
 
-// #reset-request-modal (index.html:166-238, auth.js:214-284).
+// #reset-request-modal — SRS §3.1 Form Quên mật khẩu
 // LoginScreen remount modal (đổi `key`) mỗi lần mở = clearResetRequestForm.
 export function ResetRequestModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [account, setAccount] = useState('')
@@ -42,25 +42,26 @@ export function ResetRequestModal({ open, onClose }: { open: boolean; onClose: (
       />
       <ModalBody>
         <form id="reset-request-form" onSubmit={onSubmit}>
-          <p className="mb-6 text-[0.95rem] text-text-muted">
-            Vui lòng nhập tên tài khoản của bạn. Quản trị viên sẽ nhận được yêu cầu và hỗ trợ bạn khôi phục mật khẩu.
+          <p className="mb-6 text-[0.95rem] leading-relaxed text-text-muted">
+            Nhập tên đăng nhập hoặc email đã đăng ký. Hệ thống sẽ gửi liên kết khôi phục mật khẩu nếu tài khoản hợp lệ.
           </p>
           <div className="mb-4">
             <label htmlFor="reset-username" className={modalLabelClass}>
-              Tài khoản (Username)
+              Tài khoản hoặc Email
             </label>
             <input
               type="text"
               id="reset-username"
               name="account"
               required
-              placeholder="Nhập tên đăng nhập của bạn"
+              placeholder="Nhập tài khoản hoặc email"
+              autoComplete="username"
               className={modalInputClass}
               value={account}
               onChange={(e) => setAccount(e.target.value)}
             />
           </div>
-          <div id="reset-request-error" className="mt-3 mb-4 min-h-5 text-sm text-danger">
+          <div id="reset-request-error" className="mt-3 mb-4 min-h-5 text-sm text-danger" role="alert" aria-live="assertive">
             {error}
           </div>
           <div
@@ -84,7 +85,7 @@ export function ResetRequestModal({ open, onClose }: { open: boolean; onClose: (
           size="modalWide"
           disabled={mutation.isPending}
         >
-          {mutation.isPending ? 'Đang gửi...' : 'Gửi yêu cầu'}
+          {mutation.isPending ? 'Đang gửi...' : 'Xác nhận'}
         </Button>
       </ModalFooter>
     </Modal>
