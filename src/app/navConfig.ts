@@ -111,7 +111,6 @@ export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMet
 export const STUB_ROUTES = [
   'devices',
   'enterprises',
-  'users',
   'roles',
   'static-images',
   'ai-events',

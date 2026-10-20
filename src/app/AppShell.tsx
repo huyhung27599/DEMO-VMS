@@ -7,6 +7,7 @@ import { MapSection } from '../features/map/MapSection'
 import { PlaybackSection } from '../features/playback/PlaybackSection'
 import { SettingsSection } from '../features/settings/SettingsSection'
 import { StatisticsSection } from '../features/statistics/StatisticsSection'
+import { UsersSection } from '../features/users/UsersSection'
 import { VehicleSection } from '../features/vehicle/VehicleSection'
 import { GlobalLoader } from '../shared/ui/GlobalLoader'
 import { LogoutConfirmModal } from './LogoutConfirmModal'
@@ -36,6 +37,7 @@ export function AppShell({ hidden }: { hidden: boolean }) {
         <DriverSection hidden={active !== 'driver'} />
         <VehicleSection hidden={active !== 'vehicle'} />
         <EventServerSection hidden={active !== 'event-server'} />
+        <UsersSection hidden={active !== 'users'} />
         {STUB_ROUTES.map((routeId) => (
           <PlaceholderSection key={routeId} routeId={routeId} hidden={active !== routeId} />
         ))}
