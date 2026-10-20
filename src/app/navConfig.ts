@@ -2,6 +2,7 @@ import type { AppRoute } from './useActiveSection'
 
 export type NavItem = {
   target: AppRoute
+  /** Font Awesome icon classes, e.g. "fa-regular fa-map" */
   icon: string
   text: string
 }
@@ -12,53 +13,39 @@ export type NavGroup = {
   items: ReadonlyArray<NavItem>
 }
 
-/** Primary sidebar IA — event-server & statistics omitted from nav. */
+/**
+ * Sidebar IA khớp mock Gtel DASHCAM VMS.
+ * Real pages: dashboard, liveview, playback, map, statistics→Báo cáo, driver, vehicle, settings.
+ */
 export const NAV_GROUPS: ReadonlyArray<NavGroup> = [
   {
     id: 'overview',
     label: 'Tổng quan',
-    items: [{ target: 'dashboard', icon: 'fa-table-columns', text: 'Trung tâm điều khiển' }],
-  },
-  {
-    id: 'monitor',
-    label: 'Giám sát',
     items: [
-      { target: 'liveview', icon: 'fa-video', text: 'Giám sát trực tuyến' },
-      { target: 'map', icon: 'fa-map-location-dot', text: 'Bản đồ trực tuyến' },
-      { target: 'playback', icon: 'fa-circle-play', text: 'Phát lại video' },
-      { target: 'static-images', icon: 'fa-image', text: 'Ảnh tĩnh' },
-      { target: 'ai-events', icon: 'fa-clapperboard', text: 'Video sự kiện AI' },
+      { target: 'dashboard', icon: 'fa-solid fa-table-cells-large', text: 'Trung tâm điều khiển' },
+      { target: 'liveview', icon: 'fa-solid fa-video', text: 'Giám sát trực tuyến' },
+      { target: 'playback', icon: 'fa-solid fa-circle-play', text: 'Phát lại video' },
+      { target: 'map', icon: 'fa-solid fa-map', text: 'Bản đồ trực tuyến' },
     ],
   },
   {
-    id: 'reports',
-    label: 'Báo cáo',
+    id: 'operations',
+    label: 'Vận hành',
     items: [
-      { target: 'reports-trips', icon: 'fa-route', text: 'Báo cáo hành trình' },
-      { target: 'reports-speed', icon: 'fa-gauge-high', text: 'Báo cáo tốc độ' },
-      { target: 'reports-driving-time', icon: 'fa-clock', text: 'Thời gian lái liên tục' },
-      { target: 'reports-stops', icon: 'fa-hand', text: 'Dừng, đỗ' },
-      { target: 'reports-summary', icon: 'fa-file-lines', text: 'Báo cáo tổng hợp' },
-      { target: 'reports-ai-behavior', icon: 'fa-brain', text: 'Hành vi AI' },
+      { target: 'statistics', icon: 'fa-solid fa-chart-column', text: 'Báo cáo' },
+      { target: 'driver', icon: 'fa-solid fa-user', text: 'Quản lý tài xế' },
+      { target: 'vehicle', icon: 'fa-solid fa-van-shuttle', text: 'Quản lý phương tiện' },
     ],
   },
   {
-    id: 'manage',
-    label: 'Quản lý',
+    id: 'admin',
+    label: 'Quản trị',
     items: [
-      { target: 'driver', icon: 'fa-id-card', text: 'Quản lý tài xế' },
-      { target: 'vehicle', icon: 'fa-truck-front', text: 'Quản lý phương tiện' },
-      { target: 'devices', icon: 'fa-server', text: 'Quản lý thiết bị' },
-    ],
-  },
-  {
-    id: 'settings',
-    label: 'Cài đặt',
-    items: [
-      { target: 'settings', icon: 'fa-sliders', text: 'Ngưỡng cảnh báo' },
-      { target: 'users', icon: 'fa-users', text: 'Người dùng' },
-      { target: 'roles', icon: 'fa-user-shield', text: 'Phân quyền' },
-      { target: 'audit', icon: 'fa-clipboard-list', text: 'Nhật ký Audit' },
+      { target: 'devices', icon: 'fa-solid fa-sim-card', text: 'Quản lý thiết bị' },
+      { target: 'enterprises', icon: 'fa-solid fa-building', text: 'Quản lý doanh nghiệp' },
+      { target: 'users', icon: 'fa-solid fa-user-plus', text: 'Quản lý người dùng' },
+      { target: 'roles', icon: 'fa-solid fa-shield-halved', text: 'Quản lý phân quyền' },
+      { target: 'settings', icon: 'fa-solid fa-gear', text: 'Cài đặt hệ thống' },
     ],
   },
 ]
@@ -66,6 +53,23 @@ export const NAV_GROUPS: ReadonlyArray<NavGroup> = [
 export type PlaceholderMeta = { title: string; description: string }
 
 export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMeta>>> = {
+  devices: {
+    title: 'Quản lý thiết bị',
+    description: 'Danh sách Box AI và Camera, trạng thái, firmware (SRS 3.16).',
+  },
+  enterprises: {
+    title: 'Quản lý doanh nghiệp',
+    description: 'Quản lý doanh nghiệp / tenant trên hệ thống VMS đa tenant.',
+  },
+  users: {
+    title: 'Quản lý người dùng',
+    description: 'Quản lý tài khoản người dùng VMS (SRS 3.19).',
+  },
+  roles: {
+    title: 'Quản lý phân quyền',
+    description: 'Quản lý vai trò và ma trận quyền (SRS 3.19).',
+  },
+  // Giữ stub cũ để deep-link không 404; không hiện trên sidebar mới
   'static-images': {
     title: 'Ảnh tĩnh',
     description: 'Hiển thị ảnh tĩnh truyền về từ thiết bị (SRS 3.4).',
@@ -98,18 +102,6 @@ export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMet
     title: 'Báo cáo hành vi AI',
     description: 'Báo cáo hành vi AI theo Phụ lục B QCVN06 (SRS 3.13).',
   },
-  devices: {
-    title: 'Quản lý thiết bị',
-    description: 'Danh sách Box AI và Camera, trạng thái, firmware (SRS 3.16).',
-  },
-  users: {
-    title: 'Người dùng',
-    description: 'Quản lý tài khoản người dùng VMS (SRS 3.19).',
-  },
-  roles: {
-    title: 'Phân quyền',
-    description: 'Quản lý vai trò và ma trận quyền (SRS 3.19).',
-  },
   audit: {
     title: 'Nhật ký Audit',
     description: 'Lịch sử thao tác trên hệ thống VMS (SRS 3.20).',
@@ -117,6 +109,10 @@ export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMet
 }
 
 export const STUB_ROUTES = [
+  'devices',
+  'enterprises',
+  'users',
+  'roles',
   'static-images',
   'ai-events',
   'reports-trips',
@@ -125,9 +121,6 @@ export const STUB_ROUTES = [
   'reports-stops',
   'reports-summary',
   'reports-ai-behavior',
-  'devices',
-  'users',
-  'roles',
   'audit',
 ] as const satisfies ReadonlyArray<AppRoute>
 

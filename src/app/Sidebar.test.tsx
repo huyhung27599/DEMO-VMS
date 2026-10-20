@@ -11,28 +11,34 @@ beforeEach(() => {
   useAuthStore.setState({ view: 'app', username: 'admin', logoutReason: '', hasShownApp: true })
 })
 
-describe('Sidebar grouped nav', () => {
-  it('hiển thị đủ 5 nhóm SRS', async () => {
+describe('Sidebar mock IA', () => {
+  it('hiển thị đúng 3 nhóm Tổng quan / Vận hành / Quản trị', async () => {
     const onLogout = vi.fn()
     renderWithProviders(<Sidebar active="dashboard" onLogoutClick={onLogout} />, { route: '/dashboard' })
     await waitFor(() => expect(screen.getByLabelText('Điều hướng chính')).toBeInTheDocument())
+    expect(NAV_GROUPS.map((g) => g.label)).toEqual(['Tổng quan', 'Vận hành', 'Quản trị'])
     for (const g of NAV_GROUPS) {
-      expect(screen.getByRole('button', { name: new RegExp(g.label, 'i') })).toBeInTheDocument()
+      expect(screen.getByText(g.label)).toBeInTheDocument()
     }
+    expect(screen.getByText('Dashcam VMS')).toBeInTheDocument()
   })
 
-  it('click stub route điều hướng tới path mới', async () => {
+  it('Báo cáo đi tới statistics (trang có dữ liệu)', async () => {
     const onLogout = vi.fn()
     const { router } = renderWithProviders(<Sidebar active="dashboard" onLogoutClick={onLogout} />, {
       route: '/dashboard',
     })
-    await waitFor(() => expect(screen.getByLabelText('Điều hướng chính')).toBeInTheDocument())
-    const reportsToggle = screen.getByRole('button', { name: /Báo cáo/i })
-    if (reportsToggle.getAttribute('aria-expanded') === 'false') {
-      fireEvent.click(reportsToggle)
-    }
-    fireEvent.click(screen.getByRole('button', { name: 'Báo cáo hành trình' }))
-    await waitFor(() => expect(router.state.location.pathname).toBe('/reports-trips'))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Báo cáo' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Báo cáo' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/statistics'))
+  })
+
+  it('active users dùng pill đỏ nhạt', async () => {
+    const onLogout = vi.fn()
+    renderWithProviders(<Sidebar active="users" onLogoutClick={onLogout} />, { route: '/users' })
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Quản lý người dùng' })).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: 'Quản lý người dùng' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Quản lý người dùng' }).className).toMatch(/bg-\[#fce8eb\]/)
   })
 
   it('Đăng xuất gọi onLogoutClick', async () => {
@@ -46,11 +52,8 @@ describe('Sidebar grouped nav', () => {
 
 describe('PlaceholderSection', () => {
   it('hiển thị title + badge Đang phát triển', async () => {
-    renderWithProviders(<PlaceholderSection routeId="reports-trips" hidden={false} />)
-    expect(
-      await screen.findByRole('heading', { name: PLACEHOLDER_PAGES['reports-trips']!.title }),
-    ).toBeInTheDocument()
+    renderWithProviders(<PlaceholderSection routeId="enterprises" hidden={false} />)
+    expect(await screen.findByRole('heading', { name: PLACEHOLDER_PAGES.enterprises!.title })).toBeInTheDocument()
     expect(screen.getByText('Đang phát triển')).toBeInTheDocument()
-    expect(screen.getByText(PLACEHOLDER_PAGES['reports-trips']!.description)).toBeInTheDocument()
   })
 })

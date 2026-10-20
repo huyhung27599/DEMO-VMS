@@ -23,6 +23,7 @@ export const APP_ROUTES = [
   'reports-summary',
   'reports-ai-behavior',
   'devices',
+  'enterprises',
   'users',
   'roles',
   'audit',
