@@ -1,4 +1,4 @@
-import { ROLES, STATUS_LABEL, type MockUser, type Persona, type UserStatus } from './mockData'
+import { ROLES, STATUS_LABEL, type MockUser, type Persona, type RoleChip, type UserStatus } from './mockData'
 
 export const PAGE_SIZE = 10
 
@@ -12,30 +12,48 @@ export type UserFilters = {
 export function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
+  if (parts.length === 1) return parts[0]!.slice(0, 1).toUpperCase()
+  return parts[parts.length - 1]![0]!.toUpperCase()
 }
 
-export function roleNames(roleIds: string[]): string {
-  return roleIds
-    .map((id) => ROLES.find((r) => r.id === id)?.name ?? id)
-    .join(', ')
-}
-
-export function statusBadgeClass(status: UserStatus): string {
-  switch (status) {
-    case 'active':
-      return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-    case 'inactive':
-      return 'bg-slate-100 text-slate-600 ring-slate-200'
-    case 'locked':
-      return 'bg-amber-50 text-amber-800 ring-amber-200'
-    case 'pending':
-      return 'bg-sky-50 text-sky-700 ring-sky-200'
+export function roleChipClass(chip: RoleChip): string {
+  switch (chip) {
+    case 'super':
+      return 'bg-[#fde8eb] text-[#c92038] ring-[#f5c2c9]'
+    case 'admin':
+      return 'bg-[#1e293b] text-white ring-[#1e293b]'
+    case 'monitor':
+      return 'bg-[#e0f2fe] text-[#0369a1] ring-[#bae6fd]'
+    case 'ops':
+      return 'bg-[#fef3c7] text-[#b45309] ring-[#fde68a]'
+    case 'viewer':
+      return 'bg-[#f1f5f9] text-[#64748b] ring-[#e2e8f0]'
   }
 }
 
-export function filterUsers(users: MockUser[], filters: UserFilters, persona: Persona, lockedEnterpriseId: string): MockUser[] {
+export function rolesOf(roleIds: string[]) {
+  return roleIds.map((id) => ROLES.find((r) => r.id === id)).filter(Boolean) as (typeof ROLES)[number][]
+}
+
+export function statusDotClass(status: UserStatus): string {
+  switch (status) {
+    case 'active':
+      return 'bg-emerald-500'
+    case 'inactive':
+      return 'bg-slate-400'
+    case 'locked':
+      return 'bg-amber-500'
+    case 'pending':
+      return 'bg-orange-400'
+  }
+}
+
+export function filterUsers(
+  users: MockUser[],
+  filters: UserFilters,
+  persona: Persona,
+  lockedEnterpriseId: string,
+): MockUser[] {
   const q = filters.search.trim().toLowerCase()
   return users.filter((u) => {
     if (persona === 'enterprise-admin' && u.enterpriseId !== lockedEnterpriseId) return false
@@ -52,11 +70,24 @@ export function filterUsers(users: MockUser[], filters: UserFilters, persona: Pe
   })
 }
 
-export function paginate<T>(items: T[], page: number, pageSize = PAGE_SIZE): { rows: T[]; totalPages: number; page: number } {
-  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+export function paginate<T>(items: T[], page: number, pageSize = PAGE_SIZE): {
+  rows: T[]
+  totalPages: number
+  page: number
+  from: number
+  to: number
+} {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize) || 1)
   const safePage = Math.min(Math.max(1, page), totalPages)
   const start = (safePage - 1) * pageSize
-  return { rows: items.slice(start, start + pageSize), totalPages, page: safePage }
+  const rows = items.slice(start, start + pageSize)
+  return {
+    rows,
+    totalPages,
+    page: safePage,
+    from: items.length === 0 ? 0 : start + 1,
+    to: start + rows.length,
+  }
 }
 
 export function statusLabel(status: UserStatus): string {

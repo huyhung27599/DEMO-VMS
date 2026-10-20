@@ -1,77 +1,154 @@
+import type { ReactNode } from 'react'
 import { Button } from '../../../shared/ui/Button'
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '../../../shared/ui/Modal'
+import { Modal, ModalBody, ModalFooter } from '../../../shared/ui/Modal'
 import { initials } from '../lib'
 import type { MockUser } from '../mockData'
+
+function avatarLetters(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[parts.length - 2]![0] ?? ''}${parts[parts.length - 1]![0] ?? ''}`.toUpperCase()
+  }
+  return initials(name)
+}
 
 type BaseProps = {
   open: boolean
   user: MockUser | null
   onClose: () => void
+  onConfirm: () => void
 }
 
-export function ConfirmDeactivateModal({ open, user, onClose, onConfirm }: BaseProps & { onConfirm: () => void }) {
+function ConfirmShell({
+  id,
+  open,
+  onClose,
+  titleId,
+  title,
+  children,
+  cancelLabel = 'Hủy',
+  confirmLabel,
+  confirmVariant,
+  onConfirm,
+}: {
+  id: string
+  open: boolean
+  onClose: () => void
+  titleId: string
+  title: string
+  children: ReactNode
+  cancelLabel?: string
+  confirmLabel: string
+  confirmVariant: 'primary' | 'danger' | 'default'
+  onConfirm: () => void
+}) {
   return (
-    <Modal id="user-deactivate-modal" open={open} onClose={onClose} labelledBy="user-deactivate-title" maxWidth={440}>
-      <ModalHeader titleId="user-deactivate-title" title="Vô hiệu hóa tài khoản" closeId="btn-close-deactivate" onClose={onClose} />
-      <ModalBody>
-        <p className="m-0 text-[0.95rem] text-text-main">
-          Bạn có chắc muốn vô hiệu hóa tài khoản{' '}
-          <strong>{user?.fullName}</strong> (<span className="text-text-muted">{user?.username}</span>)?
-        </p>
-        <p className="mt-2 mb-0 text-sm text-text-muted">Người dùng sẽ không thể đăng nhập; các phiên đang mở sẽ bị thu hồi.</p>
-      </ModalBody>
+    <Modal id={id} open={open} onClose={onClose} labelledBy={titleId} maxWidth={440}>
+      <div className="flex items-start justify-between px-7 pt-6 pb-2">
+        <h3 id={titleId} className="m-0 text-lg font-bold text-text-main">
+          {title}
+        </h3>
+        <button
+          type="button"
+          aria-label="Đóng"
+          className="cursor-pointer border-none bg-transparent p-1 text-text-muted"
+          onClick={onClose}
+        >
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
+        </button>
+      </div>
+      <ModalBody>{children}</ModalBody>
       <ModalFooter>
         <Button variant="outline" size="modal" onClick={onClose}>
-          Hủy
+          {cancelLabel}
         </Button>
-        <Button variant="danger" size="modalWide" onClick={onConfirm}>
-          Vô hiệu hóa
+        <Button
+          variant={confirmVariant === 'default' ? 'default' : confirmVariant}
+          size="modalWide"
+          className={confirmVariant === 'default' ? 'bg-[#5c6b3a]! text-white!' : ''}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
         </Button>
       </ModalFooter>
     </Modal>
   )
 }
 
-export function ConfirmDeleteModal({ open, user, onClose, onConfirm }: BaseProps & { onConfirm: () => void }) {
+export function ConfirmDeactivateModal({ open, user, onClose, onConfirm }: BaseProps) {
   return (
-    <Modal id="user-delete-modal" open={open} onClose={onClose} labelledBy="user-delete-title" maxWidth={440} bordered>
-      <ModalHeader titleId="user-delete-title" title="Xóa người dùng" closeId="btn-close-delete-user" onClose={onClose} />
-      <ModalBody>
-        <p className="m-0 text-[0.95rem] text-text-main">
-          Xóa tài khoản <strong>{user?.fullName}</strong>? Hành động không thể hoàn tác trên UI demo.
-        </p>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="outline" size="modal" onClick={onClose}>
-          Hủy
-        </Button>
-        <Button variant="danger" size="modalWide" onClick={onConfirm}>
-          Xóa
-        </Button>
-      </ModalFooter>
-    </Modal>
+    <ConfirmShell
+      id="user-deactivate-modal"
+      open={open}
+      onClose={onClose}
+      titleId="user-deactivate-title"
+      title="Vô hiệu hóa tài khoản?"
+      confirmLabel="Vô hiệu hóa"
+      confirmVariant="default"
+      onConfirm={onConfirm}
+    >
+      <p className="m-0 text-[0.95rem] leading-relaxed text-text-main">
+        Người dùng <strong>{user?.fullName}</strong> sẽ không thể đăng nhập cho đến khi được kích hoạt lại. Dữ liệu
+        vẫn được giữ nguyên.
+      </p>
+    </ConfirmShell>
   )
 }
 
-export function ResetPasswordModal({ open, user, onClose, onConfirm }: BaseProps & { onConfirm: () => void }) {
+export function ConfirmDeleteModal({ open, user, onClose, onConfirm }: BaseProps) {
+  return (
+    <ConfirmShell
+      id="user-delete-modal"
+      open={open}
+      onClose={onClose}
+      titleId="user-delete-title"
+      title="Xóa người dùng?"
+      confirmLabel="Xóa"
+      confirmVariant="danger"
+      onConfirm={onConfirm}
+    >
+      <p className="m-0 text-[0.95rem] leading-relaxed text-text-main">
+        Tài khoản <strong>{user?.fullName}</strong> sẽ bị xóa khỏi hệ thống. Hành động này không thể hoàn tác.
+      </p>
+    </ConfirmShell>
+  )
+}
+
+export function ResetPasswordModal({ open, user, onClose, onConfirm }: BaseProps) {
   return (
     <Modal id="user-reset-password-modal" open={open} onClose={onClose} labelledBy="user-reset-title" maxWidth={460}>
-      <ModalHeader titleId="user-reset-title" title="Đặt lại mật khẩu" closeId="btn-close-reset-user" onClose={onClose} />
+      <div className="flex items-start justify-between px-7 pt-6 pb-2">
+        <h3 id="user-reset-title" className="m-0 text-lg font-bold text-text-main">
+          Đặt lại mật khẩu?
+        </h3>
+        <button
+          type="button"
+          aria-label="Đóng"
+          className="cursor-pointer border-none bg-transparent p-1 text-text-muted"
+          onClick={onClose}
+        >
+          <i className="fa-solid fa-xmark" aria-hidden="true" />
+        </button>
+      </div>
       <ModalBody>
+        <p className="m-0 mb-4 text-sm leading-relaxed text-text-muted">
+          Hệ thống sẽ gửi liên kết đặt lại mật khẩu tới email của người dùng. Liên kết có hiệu lực trong 15 phút và
+          chỉ dùng một lần.
+        </p>
         {user ? (
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 items-center justify-center rounded-full bg-danger/10 text-sm font-bold text-danger">
-              {initials(user.fullName)}
+          <div className="flex items-center gap-3 rounded-xl bg-[#f7f4ef] px-4 py-3">
+            <div className="flex size-11 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
+              {avatarLetters(user.fullName)}
             </div>
             <div>
               <div className="font-semibold text-text-main">{user.fullName}</div>
-              <div className="text-sm text-text-muted">{user.email}</div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-sm text-text-muted">
+                <i className="fa-solid fa-envelope text-xs" aria-hidden="true" />
+                {user.email}
+              </div>
             </div>
           </div>
         ) : null}
-        <p className="mt-4 mb-0 text-sm text-text-muted">
-          Hệ thống sẽ gửi liên kết đặt lại mật khẩu tới email đã đăng ký (UI demo — không gửi email thật).
-        </p>
       </ModalBody>
       <ModalFooter>
         <Button variant="outline" size="modal" onClick={onClose}>
