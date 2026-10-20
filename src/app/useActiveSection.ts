@@ -2,19 +2,7 @@ import { useEffect } from 'react'
 import { useRouterState } from '@tanstack/react-router'
 import { useAuthStore } from '../shared/auth/authStore'
 
-// main.js:1-3
-export const VALID_ROUTES = [
-  'dashboard',
-  'liveview',
-  'playback',
-  'statistics',
-  'map',
-  'driver',
-  'vehicle',
-  'event-server',
-  'settings',
-  'login',
-] as const
+// main.js:1-3 + SRS stub routes (flat ids)
 export const APP_ROUTES = [
   'dashboard',
   'liveview',
@@ -25,7 +13,21 @@ export const APP_ROUTES = [
   'vehicle',
   'event-server',
   'settings',
+  // stubs — sidebar IA (SRS-grouped)
+  'static-images',
+  'ai-events',
+  'reports-trips',
+  'reports-speed',
+  'reports-driving-time',
+  'reports-stops',
+  'reports-summary',
+  'reports-ai-behavior',
+  'devices',
+  'users',
+  'roles',
+  'audit',
 ] as const
+export const VALID_ROUTES = [...APP_ROUTES, 'login'] as const
 export const DEFAULT_ROUTE = 'dashboard'
 
 export type AppRoute = (typeof APP_ROUTES)[number]

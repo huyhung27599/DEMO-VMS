@@ -10,15 +10,15 @@ import { StatisticsSection } from '../features/statistics/StatisticsSection'
 import { VehicleSection } from '../features/vehicle/VehicleSection'
 import { GlobalLoader } from '../shared/ui/GlobalLoader'
 import { LogoutConfirmModal } from './LogoutConfirmModal'
+import { STUB_ROUTES } from './navConfig'
+import { PlaceholderSection } from './PlaceholderSection'
 import { Sidebar } from './Sidebar'
 import { useActiveSection } from './useActiveSection'
 
 /**
- * #app-container (index.html:558-1590). Mọi section luôn được mount (giống DOM gốc);
- * section không active có `hidden` nên polling của nó vẫn chạy như bản gốc.
+ * #app-container — real sections stay mounted; stub routes use PlaceholderSection.
  */
 export function AppShell({ hidden }: { hidden: boolean }) {
-  // Hook duy nhất chạy side effect switchSection (onSectionShown)
   const active = useActiveSection()
   const [logoutOpen, setLogoutOpen] = useState(false)
 
@@ -26,7 +26,6 @@ export function AppShell({ hidden }: { hidden: boolean }) {
     <div id="app-container" hidden={hidden} className="flex h-screen animate-fade-in bg-bg max-[768px]:flex-col">
       <Sidebar active={active} onLogoutClick={() => setLogoutOpen(true)} />
       <main className="relative flex flex-1 flex-col overflow-hidden bg-bg">
-        {/* Thứ tự giống index.html */}
         <GlobalLoader />
         <DashboardSection hidden={active !== 'dashboard'} />
         <LiveviewSection hidden={active !== 'liveview'} />
@@ -37,6 +36,9 @@ export function AppShell({ hidden }: { hidden: boolean }) {
         <DriverSection hidden={active !== 'driver'} />
         <VehicleSection hidden={active !== 'vehicle'} />
         <EventServerSection hidden={active !== 'event-server'} />
+        {STUB_ROUTES.map((routeId) => (
+          <PlaceholderSection key={routeId} routeId={routeId} hidden={active !== routeId} />
+        ))}
       </main>
       <LogoutConfirmModal open={logoutOpen} onClose={() => setLogoutOpen(false)} />
     </div>
