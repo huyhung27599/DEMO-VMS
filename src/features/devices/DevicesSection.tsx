@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
@@ -15,12 +16,7 @@ import {
   type DeviceFilters,
   type DeviceFormValues,
 } from './lib'
-import {
-  DEVICE_ENTERPRISES,
-  DEVICE_VEHICLES,
-  MOCK_DEVICES,
-  type MockDevice,
-} from './mockData'
+import { devicesQueryOptions, useDeleteDeviceMutation, useSaveDeviceMutation } from './queries'
 
 type View =
   | { mode: 'list' }
@@ -28,7 +24,10 @@ type View =
   | { mode: 'detail'; deviceId: string }
 
 export function DevicesSection({ hidden }: { hidden: boolean }) {
-  const [devices, setDevices] = useState<MockDevice[]>(() => [...MOCK_DEVICES])
+  const devicesQuery = useQuery({ ...devicesQueryOptions(), enabled: !hidden })
+  const devices = useMemo(() => devicesQuery.data?.devices ?? [], [devicesQuery.data])
+  const companies = useMemo(() => devicesQuery.data?.companies ?? [], [devicesQuery.data])
+  const vehicleOptions = useMemo(() => devicesQuery.data?.vehicles ?? [], [devicesQuery.data])
   const [view, setView] = useState<View>({ mode: 'list' })
   const [draftFilters, setDraftFilters] = useState<DeviceFilters>({
     search: '',
@@ -70,73 +69,19 @@ export function DevicesSection({ hidden }: { hidden: boolean }) {
     setPage(1)
   }
 
-  const resolveVehicle = (vehicleId: string, enterpriseId: string) => {
-    const v = DEVICE_VEHICLES.find((x) => x.id === vehicleId)
-    const ent = DEVICE_ENTERPRISES.find((e) => e.id === enterpriseId)
-    return {
-      vehicleId: v?.id ?? null,
-      vehiclePlate: v?.plate ?? null,
-      enterpriseId,
-      enterpriseName: ent?.name ?? '',
-    }
-  }
+  const saveMutation = useSaveDeviceMutation({ onSaved: backToList })
+  const deleteMutation = useDeleteDeviceMutation({
+    onDeleted: () => {
+      if (view.mode === 'detail' && view.deviceId === deleteId) backToList()
+      setDeleteId(null)
+    },
+  })
 
   const onSaveDevice = (values: DeviceFormValues) => {
-    if (view.mode !== 'form') return
-    const linked = resolveVehicle(values.vehicleId, values.enterpriseId)
-    if (view.formMode === 'create') {
-      const assigned = Boolean(linked.vehicleId)
-      setDevices((list) => [
-        {
-          id: `d-${Date.now()}`,
-          serial: values.serial,
-          sim: values.sim,
-          ...linked,
-          gps: assigned ? 'good' : null,
-          gpsSatellites: assigned ? 10 : null,
-          network: assigned ? '5G' : null,
-          signalDbm: assigned ? -70 : null,
-          serverConnected: assigned ? true : null,
-          storagePercent: assigned ? 20 : null,
-          storageDays: assigned ? 30 : null,
-          cameras: assigned ? ['Lái xe'] : [],
-          lastOnline: assigned ? 'Vừa xong' : null,
-          installedAt: assigned
-            ? new Date().toLocaleDateString('vi-VN')
-            : null,
-          model: 'Box AI Dashcam',
-          history: [],
-        },
-        ...list,
-      ])
-      showToast('Đã tạo thiết bị thành công', 'success')
-    } else if (view.deviceId) {
-      setDevices((list) =>
-        list.map((d) => {
-          if (d.id !== view.deviceId) return d
-          const assigned = Boolean(linked.vehicleId)
-          return {
-            ...d,
-            sim: values.sim,
-            ...linked,
-            gps: assigned ? (d.gps ?? 'good') : null,
-            gpsSatellites: assigned ? (d.gpsSatellites ?? 10) : null,
-            network: assigned ? (d.network ?? '5G') : null,
-            signalDbm: assigned ? (d.signalDbm ?? -70) : null,
-            serverConnected: assigned ? (d.serverConnected ?? true) : null,
-            storagePercent: assigned ? (d.storagePercent ?? 20) : null,
-            storageDays: assigned ? (d.storageDays ?? 30) : null,
-            cameras: assigned ? (d.cameras.length ? d.cameras : ['Lái xe']) : [],
-            lastOnline: assigned ? (d.lastOnline ?? 'Vừa xong') : null,
-            installedAt: assigned
-              ? (d.installedAt ?? new Date().toLocaleDateString('vi-VN'))
-              : null,
-          }
-        }),
-      )
-      showToast('Đã cập nhật thiết bị thành công', 'success')
-    }
-    backToList()
+    if (view.mode !== 'form' || saveMutation.isPending) return
+    const editing = view.formMode === 'edit' ? (devices.find((d) => d.id === view.deviceId) ?? null) : null
+    const companyName = companies.find((c) => c.id === values.enterpriseId)?.name ?? ''
+    saveMutation.mutate({ values, editing, companyName })
   }
 
   return (
@@ -145,6 +90,8 @@ export function DevicesSection({ hidden }: { hidden: boolean }) {
         <DeviceFormView
           mode={view.formMode}
           devices={devices}
+          companies={companies}
+          vehicles={vehicleOptions}
           initial={formInitial}
           editId={view.deviceId}
           onCancel={backToList}
@@ -224,7 +171,7 @@ export function DevicesSection({ hidden }: { hidden: boolean }) {
               }}
             >
               <option value="">Tất cả doanh nghiệp</option>
-              {DEVICE_ENTERPRISES.map((ent) => (
+              {companies.map((ent) => (
                 <option key={ent.id} value={ent.id}>
                   {ent.name}
                 </option>
@@ -250,10 +197,14 @@ export function DevicesSection({ hidden }: { hidden: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {devicesQuery.isPending || devicesQuery.isError || rows.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
-                      Không có thiết bị phù hợp bộ lọc
+                      {devicesQuery.isPending
+                        ? 'Đang tải dữ liệu...'
+                        : devicesQuery.isError
+                          ? devicesQuery.error.message
+                          : 'Không có thiết bị phù hợp bộ lọc'}
                     </td>
                   </tr>
                 ) : (
@@ -362,11 +313,8 @@ export function DevicesSection({ hidden }: { hidden: boolean }) {
         device={deleteDevice}
         onClose={() => setDeleteId(null)}
         onConfirm={() => {
-          if (!deleteDevice) return
-          setDevices((list) => list.filter((d) => d.id !== deleteDevice.id))
-          showToast('Đã xóa thiết bị', 'success')
-          setDeleteId(null)
-          if (view.mode === 'detail' && view.deviceId === deleteDevice.id) backToList()
+          if (!deleteDevice || deleteMutation.isPending) return
+          deleteMutation.mutate(deleteDevice)
         }}
       />
     </ContentSection>

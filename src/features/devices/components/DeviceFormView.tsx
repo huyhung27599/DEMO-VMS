@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Button } from '../../../shared/ui/Button'
 import { modalInputClass } from '../../../shared/ui/Modal'
 import { EMPTY_DEVICE_FORM, validateDeviceForm, type DeviceFormValues } from '../lib'
-import { DEVICE_ENTERPRISES, DEVICE_VEHICLES, type MockDevice } from '../mockData'
+import type { Device } from '../types'
 
 type DeviceFormViewProps = {
   mode: 'create' | 'edit'
-  devices: MockDevice[]
+  devices: Device[]
+  companies: { id: string; name: string }[]
+  vehicles: { plate: string; enterpriseId: string }[]
   initial: DeviceFormValues
   editId?: string
   onCancel: () => void
@@ -20,6 +22,8 @@ const fieldHint = 'mt-1.5 mb-0 text-xs text-text-muted'
 export function DeviceFormView({
   mode,
   devices,
+  companies,
+  vehicles: allVehicles,
   initial,
   editId,
   onCancel,
@@ -34,9 +38,9 @@ export function DeviceFormView({
   }, [initial])
 
   const vehicles = useMemo(() => {
-    if (!values.enterpriseId) return DEVICE_VEHICLES
-    return DEVICE_VEHICLES.filter((v) => v.enterpriseId === values.enterpriseId)
-  }, [values.enterpriseId])
+    if (!values.enterpriseId) return allVehicles
+    return allVehicles.filter((v) => v.enterpriseId === values.enterpriseId)
+  }, [values.enterpriseId, allVehicles])
 
   const onFormSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -108,10 +112,12 @@ export function DeviceFormView({
               <label htmlFor="device-sim" className={labelClass}>
                 SIM / Số thuê bao
               </label>
+              {/* addDevice/editDevice không có tham số SIM */}
               <input
                 id="device-sim"
                 className={modalInputClass}
-                placeholder="VD: 0356 xxxx xxx"
+                placeholder="—"
+                disabled
                 value={values.sim}
                 onChange={(e) => setValues((v) => ({ ...v, sim: e.target.value }))}
               />
@@ -123,6 +129,7 @@ export function DeviceFormView({
               <select
                 id="device-enterprise"
                 className={modalInputClass}
+                disabled={mode === 'edit'}
                 value={values.enterpriseId}
                 onChange={(e) =>
                   setValues((v) => ({
@@ -133,7 +140,7 @@ export function DeviceFormView({
                 }
               >
                 <option value="">Chọn doanh nghiệp</option>
-                {DEVICE_ENTERPRISES.map((ent) => (
+                {companies.map((ent) => (
                   <option key={ent.id} value={ent.id}>
                     {ent.name}
                   </option>
@@ -149,7 +156,7 @@ export function DeviceFormView({
           <h3 className={sectionTitle}>Gán phương tiện</h3>
           <div>
             <label htmlFor="device-vehicle" className={labelClass}>
-              Phương tiện lắp đặt
+              Phương tiện lắp đặt <span className="text-danger">*</span>
             </label>
             <select
               id="device-vehicle"
@@ -157,14 +164,14 @@ export function DeviceFormView({
               value={values.vehicleId}
               onChange={(e) => setValues((v) => ({ ...v, vehicleId: e.target.value }))}
             >
-              <option value="">— Chưa lắp —</option>
+              <option value="">— Chọn phương tiện —</option>
               {vehicles.map((v) => (
-                <option key={v.id} value={v.id}>
+                <option key={v.plate} value={v.plate}>
                   {v.plate}
                 </option>
               ))}
             </select>
-            <p className={fieldHint}>Để trống nếu thiết bị chưa lắp lên xe.</p>
+            <p className={fieldHint}>808gps chỉ liệt kê thiết bị đã lắp lên xe.</p>
           </div>
         </section>
 

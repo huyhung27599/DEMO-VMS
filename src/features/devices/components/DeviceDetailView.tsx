@@ -1,8 +1,8 @@
 import { Button } from '../../../shared/ui/Button'
-import type { MockDevice } from '../mockData'
+import type { Device } from '../types'
 
 type DeviceDetailViewProps = {
-  device: MockDevice
+  device: Device
   onBack: () => void
   onEdit: () => void
 }
@@ -90,8 +90,8 @@ export function DeviceDetailView({ device, onBack, onEdit }: DeviceDetailViewPro
           <StatusCard
             label="Tín hiệu"
             value={
-              assigned && device.network && device.signalDbm != null
-                ? `${device.network} · ${device.signalDbm} dBm`
+              assigned && device.network
+                ? `${device.network}${device.signalDbm != null ? ` · ${device.signalDbm} dBm` : ''}`
                 : '—'
             }
             tone={device.gps === 'weak' ? 'warn' : assigned ? 'ok' : 'muted'}
