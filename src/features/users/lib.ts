@@ -1,4 +1,4 @@
-import { ROLES, STATUS_LABEL, type MockUser, type RoleChip, type UserStatus } from './mockData'
+import { STATUS_LABEL, type Role, type RoleChip, type User, type UserStatus } from './types'
 
 export const PAGE_SIZE = 10
 
@@ -31,8 +31,8 @@ export function roleChipClass(chip: RoleChip): string {
   }
 }
 
-export function rolesOf(roleIds: string[]) {
-  return roleIds.map((id) => ROLES.find((r) => r.id === id)).filter(Boolean) as (typeof ROLES)[number][]
+export function rolesOf(roleIds: string[], roles: Role[]): Role[] {
+  return roleIds.map((id) => roles.find((r) => r.id === id)).filter((r): r is Role => !!r)
 }
 
 export function statusDotClass(status: UserStatus): string {
@@ -48,7 +48,7 @@ export function statusDotClass(status: UserStatus): string {
   }
 }
 
-export function filterUsers(users: MockUser[], filters: UserFilters): MockUser[] {
+export function filterUsers(users: User[], filters: UserFilters): User[] {
   const q = filters.search.trim().toLowerCase()
   return users.filter((u) => {
     if (filters.enterpriseId && u.enterpriseId !== filters.enterpriseId) return false
@@ -94,6 +94,8 @@ export type UserFormValues = {
   phone: string
   enterpriseId: string
   roleIds: string[]
+  /** Chỉ khi tạo mới; để trống thì 808gps đặt 000000 */
+  password: string
 }
 
 export const EMPTY_USER_FORM: UserFormValues = {
@@ -103,6 +105,7 @@ export const EMPTY_USER_FORM: UserFormValues = {
   phone: '',
   enterpriseId: '',
   roleIds: [],
+  password: '',
 }
 
 export function validateUserForm(values: UserFormValues, opts: { usernameEditable: boolean }): string | null {
@@ -114,10 +117,60 @@ export function validateUserForm(values: UserFormValues, opts: { usernameEditabl
     if (!user) return 'Vui lòng nhập tên đăng nhập'
     if (!/^[a-zA-Z0-9._-]{4,50}$/.test(user)) return 'Tên đăng nhập 4–50 ký tự (chữ, số, . _ -)'
   }
+  // 808gps không bắt buộc email (tài khoản có sẵn có thể email = null)
   const email = values.email.trim()
-  if (!email) return 'Vui lòng nhập email'
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email không đúng định dạng'
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email không đúng định dạng'
+  if (values.password && values.password.length < 6) return 'Mật khẩu tối thiểu 6 ký tự'
   if (!values.enterpriseId) return 'Vui lòng chọn doanh nghiệp'
   if (values.roleIds.length < 1) return 'Vui lòng chọn ít nhất một vai trò'
   return null
+}
+
+type Row = Record<string, unknown>
+
+const CHIPS: RoleChip[] = ['admin', 'monitor', 'ops', 'viewer', 'super']
+
+/** findUserRole.role[] → Role; màu chip xoay vòng theo thứ tự. */
+export function toRoles(rows: Row[]): Role[] {
+  return rows.map((r, i) => ({ id: String(r.id), name: String(r.name ?? r.id), chip: CHIPS[i % CHIPS.length] }))
+}
+
+const splitIds = (v: unknown) =>
+  String(v ?? '')
+    .split(',')
+    .map((x) => x.trim())
+    .filter(Boolean)
+
+/** findUserAccount.infos[] → User. stu: 1 = hoạt động, 0 = vô hiệu hóa. */
+export function toUsers(rows: Row[]): User[] {
+  return rows.map((u) => ({
+    id: String(u.id),
+    fullName: String(u.nm || u.act || ''),
+    username: String(u.act ?? ''),
+    email: String(u.email ?? ''),
+    phone: u.phone ? String(u.phone) : undefined,
+    enterpriseId: String(u.pid ?? ''),
+    enterpriseName: String(u.pnm ?? ''),
+    roleIds: splitIds(u.rid),
+    status: Number(u.stu) === 0 ? 'inactive' : 'active',
+    lastLoginAt: null,
+  }))
+}
+
+/** Tham số mergeUserAccount (doc 808gps: account, cid, roleId bắt buộc; status 0/1). */
+export function toMergeUserParams(
+  values: Pick<UserFormValues, 'fullName' | 'username' | 'email' | 'phone' | 'enterpriseId' | 'roleIds' | 'password'>,
+  extra: { id?: string; status?: UserStatus } = {},
+): Record<string, unknown> {
+  return {
+    ...(extra.id ? { id: extra.id } : {}),
+    account: values.username,
+    name: values.fullName,
+    cid: values.enterpriseId,
+    roleId: values.roleIds.join(','),
+    email: values.email || undefined,
+    phone: values.phone || undefined,
+    password: values.password || undefined,
+    ...(extra.status ? { status: extra.status === 'inactive' ? 0 : 1 } : {}),
+  }
 }

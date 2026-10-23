@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
 import { ConfirmDeactivateModal, ConfirmDeleteModal, ResetPasswordModal } from './components/UserConfirmModals'
 import { UserFormModal } from './components/UserFormModal'
-import { ENTERPRISES, MOCK_USERS, ROLES, type MockUser, type UserStatus } from './mockData'
+import { useDeleteUserMutation, useSaveUserMutation, useSetUserStatusMutation, usersQueryOptions } from './queries'
+import type { UserStatus } from './types'
 import {
   EMPTY_USER_FORM,
   filterUsers,
@@ -26,7 +28,10 @@ type Dialog =
   | { type: 'reset'; userId: string }
 
 export function UsersSection({ hidden }: { hidden: boolean }) {
-  const [users, setUsers] = useState<MockUser[]>(() => [...MOCK_USERS])
+  const usersQuery = useQuery({ ...usersQueryOptions(), enabled: !hidden })
+  const users = useMemo(() => usersQuery.data?.users ?? [], [usersQuery.data])
+  const roles = useMemo(() => usersQuery.data?.roles ?? [], [usersQuery.data])
+  const companies = useMemo(() => usersQuery.data?.companies ?? [], [usersQuery.data])
   const [draftFilters, setDraftFilters] = useState<UserFilters>({
     search: '',
     roleId: '',
@@ -61,6 +66,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         phone: u.phone ?? '',
         enterpriseId: u.enterpriseId,
         roleIds: [...u.roleIds],
+        password: '',
       }
     }
     return EMPTY_USER_FORM
@@ -78,53 +84,17 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
     setPage(1)
   }
 
+  const saveMutation = useSaveUserMutation(closeDialog)
+  const statusMutation = useSetUserStatusMutation(closeDialog)
+  const deleteMutation = useDeleteUserMutation(closeDialog)
+
   const onCreateOrUpdate = (values: UserFormValues) => {
-    const ent = ENTERPRISES.find((e) => e.id === values.enterpriseId)
-    if (dialog.type !== 'form') return
-    if (dialog.mode === 'create') {
-      if (users.some((u) => u.username.toLowerCase() === values.username.toLowerCase())) {
-        showToast('Tên đăng nhập đã tồn tại', 'error')
-        return
-      }
-      if (users.some((u) => u.email.toLowerCase() === values.email.toLowerCase())) {
-        showToast('Email đã tồn tại', 'error')
-        return
-      }
-      setUsers((list) => [
-        {
-          id: `u-${Date.now()}`,
-          fullName: values.fullName,
-          username: values.username,
-          email: values.email,
-          phone: values.phone || undefined,
-          enterpriseId: values.enterpriseId,
-          enterpriseName: ent?.name ?? values.enterpriseId,
-          roleIds: values.roleIds,
-          status: 'pending',
-          lastLoginAt: null,
-        },
-        ...list,
-      ])
-      showToast(`Đã tạo người dùng và gửi email kích hoạt tới ${values.email}`, 'success')
-    } else if (dialog.userId) {
-      setUsers((list) =>
-        list.map((u) =>
-          u.id === dialog.userId
-            ? {
-                ...u,
-                fullName: values.fullName,
-                email: values.email,
-                phone: values.phone || undefined,
-                enterpriseId: values.enterpriseId,
-                enterpriseName: ent?.name ?? u.enterpriseName,
-                roleIds: values.roleIds,
-              }
-            : u,
-        ),
-      )
-      showToast('Đã cập nhật người dùng thành công', 'success')
+    if (dialog.type !== 'form' || saveMutation.isPending) return
+    if (dialog.mode === 'create' && users.some((u) => u.username.toLowerCase() === values.username.toLowerCase())) {
+      showToast('Tên đăng nhập đã tồn tại', 'error')
+      return
     }
-    closeDialog()
+    saveMutation.mutate({ values, editId: dialog.mode === 'edit' ? dialog.userId : undefined })
   }
 
   return (
@@ -175,7 +145,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
           onChange={(e) => setDraftFilters((f) => ({ ...f, enterpriseId: e.target.value }))}
         >
           <option value="">Tất cả doanh nghiệp</option>
-          {ENTERPRISES.map((ent) => (
+          {companies.map((ent) => (
             <option key={ent.id} value={ent.id}>
               {ent.name}
             </option>
@@ -187,7 +157,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
           onChange={(e) => setDraftFilters((f) => ({ ...f, roleId: e.target.value }))}
         >
           <option value="">Tất cả vai trò</option>
-          {ROLES.map((r) => (
+          {roles.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>
@@ -225,10 +195,14 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {usersQuery.isPending || usersQuery.isError || rows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
-                  Không có người dùng phù hợp bộ lọc
+                  {usersQuery.isPending
+                    ? 'Đang tải dữ liệu...'
+                    : usersQuery.isError
+                      ? usersQuery.error.message
+                      : 'Không có người dùng phù hợp bộ lọc'}
                 </td>
               </tr>
             ) : (
@@ -243,11 +217,11 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-text-muted">{u.username}</td>
-                  <td className="px-4 py-3.5 text-text-muted">{u.email}</td>
-                  <td className="px-4 py-3.5 text-text-muted">{u.enterpriseName}</td>
+                  <td className="px-4 py-3.5 text-text-muted">{u.email || '—'}</td>
+                  <td className="px-4 py-3.5 text-text-muted">{u.enterpriseName || '—'}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex flex-wrap gap-1">
-                      {rolesOf(u.roleIds).map((r) => (
+                      {rolesOf(u.roleIds, roles).map((r) => (
                         <span
                           key={r.id}
                           className={`inline-flex rounded-md px-2 py-0.5 text-[0.7rem] font-semibold ring-1 ring-inset ${roleChipClass(r.chip)}`}
@@ -272,8 +246,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
                         icon={u.status === 'inactive' ? 'fa-user-check' : 'fa-user-lock'}
                         onClick={() => {
                           if (u.status === 'inactive') {
-                            setUsers((list) => list.map((x) => (x.id === u.id ? { ...x, status: 'active' } : x)))
-                            showToast('Đã kích hoạt tài khoản', 'success')
+                            if (!statusMutation.isPending) statusMutation.mutate({ user: u, status: 'active' })
                           } else {
                             setDialog({ type: 'deactivate', userId: u.id })
                           }
@@ -326,6 +299,8 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         mode={dialog.type === 'form' ? dialog.mode : 'create'}
         initial={formInitial}
         editStatus={editStatus}
+        roles={roles}
+        companies={companies}
         onClose={closeDialog}
         onSubmit={onCreateOrUpdate}
       />
@@ -334,10 +309,8 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         user={dialogUser}
         onClose={closeDialog}
         onConfirm={() => {
-          if (dialog.type !== 'deactivate') return
-          setUsers((list) => list.map((u) => (u.id === dialog.userId ? { ...u, status: 'inactive' } : u)))
-          showToast('Đã vô hiệu hóa tài khoản', 'success')
-          closeDialog()
+          if (dialog.type !== 'deactivate' || !dialogUser || statusMutation.isPending) return
+          statusMutation.mutate({ user: dialogUser, status: 'inactive' })
         }}
       />
       <ConfirmDeleteModal
@@ -345,10 +318,8 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         user={dialogUser}
         onClose={closeDialog}
         onConfirm={() => {
-          if (dialog.type !== 'delete') return
-          setUsers((list) => list.filter((u) => u.id !== dialog.userId))
-          showToast('Đã xóa người dùng', 'success')
-          closeDialog()
+          if (dialog.type !== 'delete' || deleteMutation.isPending) return
+          deleteMutation.mutate(dialog.userId)
         }}
       />
       <ResetPasswordModal

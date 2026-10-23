@@ -1,14 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalBody, ModalFooter, modalInputClass } from '../../../shared/ui/Modal'
-import { ENTERPRISES, ROLES, type MockUser } from '../mockData'
+import type { Role, User } from '../types'
 import { EMPTY_USER_FORM, statusLabel, validateUserForm, type UserFormValues } from '../lib'
 
 type UserFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
   initial: UserFormValues
-  editStatus?: MockUser['status']
+  editStatus?: User['status']
+  roles: Role[]
+  companies: { id: string; name: string }[]
   onClose: () => void
   onSubmit: (values: UserFormValues) => void
 }
@@ -21,6 +23,8 @@ export function UserFormModal({
   mode,
   initial,
   editStatus,
+  roles,
+  companies,
   onClose,
   onSubmit,
 }: UserFormModalProps) {
@@ -65,7 +69,7 @@ export function UserFormModal({
           </h3>
           <p className="mt-1 mb-0 text-sm text-text-muted">
             {mode === 'create'
-              ? 'Tạo tài khoản mới và gửi email kích hoạt cho người dùng.'
+              ? 'Tạo tài khoản đăng nhập mới trên 808gps.'
               : 'Cập nhật thông tin và phân quyền của tài khoản.'}
           </p>
         </div>
@@ -121,7 +125,7 @@ export function UserFormModal({
               </div>
               <div className="sm:col-span-2">
                 <label htmlFor="user-email" className={labelClass}>
-                  Email <span className="text-danger">*</span>
+                  Email
                 </label>
                 <input
                   id="user-email"
@@ -147,7 +151,7 @@ export function UserFormModal({
                 onChange={(e) => setValues((v) => ({ ...v, enterpriseId: e.target.value }))}
               >
                 <option value="">Chọn doanh nghiệp</option>
-                {ENTERPRISES.map((ent) => (
+                {companies.map((ent) => (
                   <option key={ent.id} value={ent.id}>
                     {ent.name}
                   </option>
@@ -160,7 +164,10 @@ export function UserFormModal({
                 <span className="font-normal text-text-muted">(chọn nhiều)</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {ROLES.map((role) => {
+                {roles.length === 0 ? (
+                  <span className="text-sm text-text-muted">Chưa có vai trò — tạo ở màn Phân quyền trước.</span>
+                ) : null}
+                {roles.map((role) => {
                   const on = values.roleIds.includes(role.id)
                   return (
                     <button
@@ -192,9 +199,19 @@ export function UserFormModal({
           ) : null}
 
           {mode === 'create' ? (
-            <div className="flex items-start gap-2 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
-              <i className="fa-solid fa-envelope mt-0.5 text-sky-600" aria-hidden="true" />
-              <span>Hệ thống sẽ gửi email kích hoạt để người dùng tự đặt mật khẩu lần đầu.</span>
+            <div>
+              <label htmlFor="user-password" className={labelClass}>
+                Mật khẩu
+              </label>
+              <input
+                id="user-password"
+                type="password"
+                autoComplete="new-password"
+                className={modalInputClass}
+                value={values.password}
+                onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+              />
+              <p className="mt-1.5 mb-0 text-xs text-text-muted">Để trống: 808gps đặt mặc định 000000</p>
             </div>
           ) : null}
 

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalBody, ModalFooter } from '../../../shared/ui/Modal'
 import { initials } from '../lib'
-import type { MockUser } from '../mockData'
+import type { User } from '../types'
 
 function avatarLetters(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -14,7 +14,7 @@ function avatarLetters(name: string): string {
 
 type BaseProps = {
   open: boolean
-  user: MockUser | null
+  user: User | null
   onClose: () => void
   onConfirm: () => void
 }
