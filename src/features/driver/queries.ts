@@ -10,6 +10,7 @@ import {
 } from './faceEvents'
 import { apiResultOk, dedupeFaceEventsMerged, mapLocalFaceLogToEvent, normalizeUnixSeconds, type Loose } from './lib'
 import { renderDrivers, setDriversData, updateTimestamp, useDriverStore } from './store'
+import { aiEventTime, aiEventToAlert } from '../vehicle/meta'
 
 export const DRIVERS_CACHE_KEY = 'drivers_cache'
 
@@ -198,4 +199,43 @@ export async function loadFaceEvents(picker: DatePickerController | null, plateI
       faceGrid: { kind: 'error', message: `Lỗi kết nối: ${message}` },
     })
   }
+}
+
+export type DriverActivity = {
+  alerts30d: number
+  hoursMonth: number | null
+  alerts: { time: string; type: string; vehicle: string; level: 'high' | 'medium' | 'low' }[]
+}
+
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/** Chi tiết tài xế: cảnh báo AI 30 ngày + giờ chạy trong tháng của xe được gán (runMileage.ttime). */
+export function driverActivityQueryOptions(vehicle: string) {
+  return queryOptions({
+    queryKey: ['driver', 'activity', vehicle] as const,
+    enabled: !!vehicle && vehicle !== '—',
+    queryFn: async (): Promise<DriverActivity> => {
+      const now = new Date()
+      const since = new Date(now.getTime() - 30 * 86_400_000)
+      const [ev, mi] = await Promise.allSettled([
+        api.syncAiEventsLocal('', vehicle),
+        api.runMileage(vehicle, `${ymd(now).slice(0, 8)}01`, ymd(now)),
+      ])
+      const evRes: Loose = ev.status === 'fulfilled' ? ev.value : null
+      const events: Loose[] = apiResultOk(evRes) && Array.isArray(evRes.events) ? evRes.events : []
+      const mine = events
+        .filter((e) => String(e.vehiIdno || e.vi || e.vehicleName || '').trim() === vehicle)
+        .filter((e) => aiEventTime(e) >= ymd(since))
+        .sort((a, b) => aiEventTime(b).localeCompare(aiEventTime(a)))
+      const miRes: Loose = mi.status === 'fulfilled' ? mi.value : null
+      const rows: Loose[] = apiResultOk(miRes) && Array.isArray(miRes.infos) ? miRes.infos : []
+      const secs = rows.reduce((sum, r) => sum + (Number(r.ttime) || 0), 0)
+      return {
+        alerts30d: mine.length,
+        hoursMonth: rows.length ? Math.round(secs / 3600) : null,
+        alerts: mine.slice(0, 10).map((e) => ({ ...aiEventToAlert(e), vehicle })),
+      }
+    },
+  })
 }

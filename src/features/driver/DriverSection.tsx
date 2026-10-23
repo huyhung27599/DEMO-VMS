@@ -12,8 +12,7 @@ import { FaceEventsTab } from './components/FaceEventsTab'
 import { FaceImageLightbox } from './components/FaceImageLightbox'
 import { FaceServiceBanner } from './components/FaceServiceBanner'
 import { initDriver, onDriverSectionVisibility } from './init'
-import { filterDrivers, type Loose } from './lib'
-import { DRIVER_ENTERPRISES } from './mockData'
+import { driverCompanyNames, filterDrivers, type Loose } from './lib'
 import { useDeleteDriverMutation, type DeleteDriverInput } from './mutations'
 import { loadDrivers } from './queries'
 import {
@@ -44,15 +43,13 @@ function onTabClick(tab: DriverTab) {
 function applyDriverFilters(search: string, enterprise: string) {
   const term = search.toLowerCase()
   let list = filterDrivers(useDriverStore.getState().driversData, term)
+  // enterprise = tên doanh nghiệp (giá trị option), so khớp companyName của tài xế
   if (enterprise) {
-    const entName = DRIVER_ENTERPRISES.find((e) => e.id === enterprise)?.name
-    if (entName) {
-      list = list.filter((d) => {
-        const name = String(d.companyName || d.coName || '')
-        if (!name) return true
-        return name === entName
-      })
-    }
+    list = list.filter((d) => {
+      const name = String(d.companyName || d.coName || '')
+      if (!name) return true
+      return name === enterprise
+    })
   }
   renderDrivers(list)
 }
@@ -62,9 +59,11 @@ export function DriverSection({ hidden }: { hidden: boolean }) {
   const enabled = useModuleEnabled('driver')
   const lastUpdate = useDriverStore((s) => s.lastUpdate)
   const activeTab = useDriverStore((s) => s.activeTab)
+  // Doanh nghiệp lấy từ companyName của danh sách tài xế thật (không thêm lời gọi API)
   const gridView = useDriverStore((s) => s.gridView)
   const deletingIds = useDriverStore((s) => s.deletingIds)
   const driversData = useDriverStore((s) => s.driversData)
+  const companies = useMemo(() => driverCompanyNames(driversData), [driversData])
   const [search, setSearch] = useState('')
   const [enterprise, setEnterprise] = useState('')
   const [detailDriver, setDetailDriver] = useState<Loose | null>(null)
@@ -210,9 +209,9 @@ export function DriverSection({ hidden }: { hidden: boolean }) {
               }}
             >
               <option value="">Tất cả doanh nghiệp</option>
-              {DRIVER_ENTERPRISES.map((ent) => (
-                <option key={ent.id} value={ent.id}>
-                  {ent.name}
+              {companies.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
             </select>

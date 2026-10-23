@@ -7,9 +7,10 @@ import {
   formatDateMsToDateInput,
   parseFacePhotoUrlToSlots,
   portraitServerDisplayUrl,
+  driverCompanyNames,
   type Loose,
 } from '../lib'
-import { DRIVER_ENTERPRISES, LICENSE_CLASS_OPTIONS } from '../mockData'
+import { LICENSE_CLASS_OPTIONS } from '../mockData'
 import { buildSaveDriverInput, useSaveDriverMutation } from '../mutations'
 import { closeDriverModal, useDriverStore } from '../store'
 import { PortraitGrid } from './PortraitGrid'
@@ -110,6 +111,8 @@ function DriverForm({ driver }: { driver: Loose | null }) {
   const pendingPortraitSlot = useRef(-1)
   const values = initialFormValues(driver)
   const isEdit = !!driver
+  const driversData = useDriverStore((s) => s.driversData)
+  const companyNames = [...new Set([values.company, ...driverCompanyNames(driversData)])]
   /** Ảnh mới chọn (base64) theo từng ô 0..4 — ưu tiên hiển thị hơn URL server */
   const [portraitLocalBase64, setPortraitLocalBase64] = useState<(string | null)[]>(emptySlots)
   /** Ảnh đã lưu trên server (URL) khi sửa tài xế */
@@ -300,9 +303,9 @@ function DriverForm({ driver }: { driver: Loose | null }) {
 
           <Field label={<>Doanh nghiệp <span className="text-[#e11d48]">*</span></>} htmlFor="driver-company">
             <select id="driver-company" className="driver-modal-input" defaultValue={values.company} aria-label="Doanh nghiệp">
-              {DRIVER_ENTERPRISES.map((e) => (
-                <option key={e.id} value={e.name}>
-                  {e.name}
+              {companyNames.map((n) => (
+                <option key={n} value={n}>
+                  {n}
                 </option>
               ))}
             </select>

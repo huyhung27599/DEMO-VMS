@@ -1,4 +1,5 @@
-import { DEMO_ALERTS, DEMO_DRIVER_STATS } from '../mockData'
+import { useQuery } from '@tanstack/react-query'
+import { driverActivityQueryOptions } from '../queries'
 import type { Loose } from '../lib'
 
 const LEVEL: Record<string, string> = {
@@ -27,7 +28,7 @@ type Props = {
   onDelete: () => void
 }
 
-/** Chi tiết tài xế — UI mockup; thống kê / lịch sử cảnh báo demo khi chưa có API. */
+/** Chi tiết tài xế — cảnh báo / giờ chạy lấy theo xe được gán (API thật); số chuyến chưa có API. */
 export function DriverDetailPanel({ driver, onBack, onEdit, onDelete }: Props) {
   const name = String(driver.dn || 'Chưa rõ tên')
   const idno = String(driver.jn || driver.id || '—')
@@ -38,6 +39,7 @@ export function DriverDetailPanel({ driver, onBack, onEdit, onDelete }: Props) {
   const expiry = String(driver.licenseExpire || driver.le || '—')
   const company = String(driver.companyName || driver.coName || '—')
   const letter = initialLetter(name)
+  const activity = useQuery(driverActivityQueryOptions(vehicle.trim())).data
 
   return (
     <div className="animate-section-in flex flex-col gap-4">
@@ -108,9 +110,17 @@ export function DriverDetailPanel({ driver, onBack, onEdit, onDelete }: Props) {
 
       <div className="grid grid-cols-3 gap-3 max-[768px]:grid-cols-1">
         {[
-          { label: 'Tổng hành trình', value: `${DEMO_DRIVER_STATS.trips} chuyến`, color: 'text-[#0f172a]' },
-          { label: 'Cảnh báo (30 ngày)', value: `${DEMO_DRIVER_STATS.alerts30d} sự kiện`, color: 'text-[#e11d48]' },
-          { label: 'Giờ lái (tháng)', value: `${DEMO_DRIVER_STATS.hoursMonth} giờ`, color: 'text-[#d97706]' },
+          { label: 'Tổng hành trình', value: '—', color: 'text-[#0f172a]' },
+          {
+            label: 'Cảnh báo (30 ngày)',
+            value: activity ? `${activity.alerts30d} sự kiện` : '—',
+            color: 'text-[#e11d48]',
+          },
+          {
+            label: 'Giờ lái (tháng)',
+            value: activity?.hoursMonth != null ? `${activity.hoursMonth} giờ` : '—',
+            color: 'text-[#d97706]',
+          },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-[#eef2f6] bg-white px-4 py-3.5 shadow-sm">
             <div className="text-[0.68rem] font-bold tracking-[0.08em] text-[#94a3b8] uppercase">{s.label}</div>
@@ -134,8 +144,15 @@ export function DriverDetailPanel({ driver, onBack, onEdit, onDelete }: Props) {
               </tr>
             </thead>
             <tbody>
-              {DEMO_ALERTS.map((a) => (
-                <tr key={a.time + a.type} className="[&>td]:border-b [&>td]:border-[#f1f5f9] [&>td]:px-4 [&>td]:py-3 [&>td]:text-[0.85rem]">
+              {!activity?.alerts.length ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-[0.85rem] text-[#94a3b8]">
+                    Không có cảnh báo
+                  </td>
+                </tr>
+              ) : null}
+              {(activity?.alerts ?? []).map((a, i) => (
+                <tr key={`${a.time}-${a.type}-${i}`} className="[&>td]:border-b [&>td]:border-[#f1f5f9] [&>td]:px-4 [&>td]:py-3 [&>td]:text-[0.85rem]">
                   <td className="tabular-nums text-[#64748b]">{a.time}</td>
                   <td className="font-semibold text-[#0f172a]">{a.type}</td>
                   <td>{a.vehicle}</td>

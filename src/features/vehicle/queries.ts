@@ -9,6 +9,7 @@ export const vehicleKeys = {
   all: ['vehicle'] as const,
   vehicles: ['vehicle', 'vehicles'] as const,
   companies: ['vehicle', 'companies'] as const,
+  companyOptions: ['vehicle', 'companyOptions'] as const,
 }
 
 // vehicle.js:114-144 loadVehicles. Khi lỗi giữ danh sách cũ (state.vehicles không bị ghi đè).
@@ -56,4 +57,35 @@ export async function refresh(client: QueryClient): Promise<void> {
   updateTimestamp()
   await client.fetchQuery(vehiclesQueryOptions())
   await client.fetchQuery(companiesQueryOptions())
+}
+
+export type CompanyNode = Company & { parentId: string | null }
+
+/** queryUserVehicle.companys[{id,nm,pid}] (đủ cả đơn vị chưa có xe); thiếu thì suy ra từ xe. */
+export function companiesFromVehicleResponse(res: Record<string, unknown> | null | undefined): CompanyNode[] {
+  const raw = Array.isArray(res?.companys) ? (res.companys as Record<string, unknown>[]) : []
+  if (raw.length) {
+    const ids = new Set(raw.map((c) => String(c.id)))
+    return raw
+      .filter((c) => c.id !== undefined && c.nm)
+      .map((c) => ({
+        id: String(c.id),
+        name: String(c.nm),
+        parentId: c.pid !== undefined && ids.has(String(c.pid)) ? String(c.pid) : null,
+      }))
+  }
+  const vehicles = Array.isArray(res?.vehicles) ? (res.vehicles as Vehicle[]).map(normalizeVehicle) : []
+  return deriveCompanies(vehicles, getUsername()).map((c) => ({ ...c, parentId: null }))
+}
+
+/** Danh sách doanh nghiệp thật cho các dropdown (driver, map, statistics, devices, users, roles). */
+export function companyOptionsQueryOptions() {
+  return queryOptions({
+    queryKey: vehicleKeys.companyOptions,
+    staleTime: 5 * 60_000,
+    queryFn: async (): Promise<CompanyNode[]> => {
+      const res = await api.queryUserVehicle()
+      return res && res.result === 0 ? companiesFromVehicleResponse(res) : []
+    },
+  })
 }

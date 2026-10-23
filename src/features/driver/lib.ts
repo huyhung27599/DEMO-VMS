@@ -838,3 +838,9 @@ export const filterDrivers = (driversData: Loose[], term: string): Loose[] =>
       (d.jn || "").toLowerCase().includes(term) ||
       (d.cn || "").toLowerCase().includes(term),
   );
+
+/** Tên doanh nghiệp (không trùng, đã sắp xếp) từ danh sách tài xế. */
+export function driverCompanyNames(drivers: Loose[]): string[] {
+  const names = drivers.map((d) => String(d?.companyName || d?.coName || '').trim()).filter(Boolean)
+  return [...new Set(names)].sort((a, b) => a.localeCompare(b, 'vi'))
+}

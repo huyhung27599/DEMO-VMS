@@ -62,6 +62,20 @@ function fmtAlertTime(raw: unknown): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
 
+/** Thời điểm của một sự kiện syncAiEventsLocal ('YYYY-MM-DD HH:mm:ss'). */
+export const aiEventTime = (e: Row): string =>
+  String(e.fileTime || e.actualTime || e.updateTime || e.fileTimeStr || '')
+
+/** Sự kiện AI → dòng cảnh báo (dùng chung cho xe và tài xế). */
+export function aiEventToAlert(e: Row): { time: string; type: string; level: VehicleAlert['level'] } {
+  const t = e.alarmType ?? e.ty ?? e.armType
+  return {
+    time: fmtAlertTime(aiEventTime(e)),
+    type: ALARM_TYPE_MAP[Number(t)] || ALARM_NAME_MAP[Number(t)] || `Báo động #${t ?? '?'}`,
+    level: alertLevelFromSeverity(getSeverity(t)),
+  }
+}
+
 /**
  * Gộp dữ liệu thật theo biển số / mã thiết bị.
  * - statusRows: getDeviceStatus.status[] (id=devIdno, vid=biển số, ol, sp/10, net, sn, dn)
@@ -106,7 +120,7 @@ export function buildVehicleMeta(
     const s = [plate, ...devs].map((k) => statusBy[k]).find(Boolean)
     const evs = [plate, ...devs]
       .flatMap((k) => eventsBy[k] || [])
-      .map((e): Row => ({ ...e, _t: e.fileTime || e.actualTime || e.updateTime || e.fileTimeStr || '' }))
+      .map((e): Row => ({ ...e, _t: aiEventTime(e) }))
       .sort((a, b) => String(b._t).localeCompare(String(a._t)))
     const alertCount = evs.filter((e) => String(e._t).startsWith(todayStr)).length
     const driver =
@@ -123,15 +137,7 @@ export function buildVehicleMeta(
       todayKm: kmBy[plate] !== undefined ? Number(kmBy[plate].toFixed(1)) : null,
       alertCount,
       firmware: [net, sats].filter(Boolean).join(' · ') || '—',
-      alerts: evs.slice(0, 10).map((e) => {
-        const t = e.alarmType ?? e.ty ?? e.armType
-        return {
-          time: fmtAlertTime(e._t),
-          type: ALARM_TYPE_MAP[Number(t)] || ALARM_NAME_MAP[Number(t)] || `Báo động #${t ?? '?'}`,
-          driver: driver || '—',
-          level: alertLevelFromSeverity(getSeverity(t)),
-        }
-      }),
+      alerts: evs.slice(0, 10).map((e) => ({ ...aiEventToAlert(e), driver: driver || '—' })),
     }
   })
   return out
