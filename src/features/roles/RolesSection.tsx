@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
@@ -13,19 +14,19 @@ import {
   kindBadgeClass,
   kindLabel,
   paginate,
-  scopeLabel,
   type RoleFormValues,
 } from './lib'
-import { MOCK_ROLES, type MockRole } from './mockData'
+import { rolesQueryOptions, useDeleteRoleMutation, useSaveRoleMutation } from './queries'
+import type { Role } from './types'
 
 type View =
   | { mode: 'list' }
   | { mode: 'form'; formMode: 'create' | 'edit'; roleId?: string }
 
 export function RolesSection({ hidden }: { hidden: boolean }) {
-  const [roles, setRoles] = useState<MockRole[]>(() =>
-    MOCK_ROLES.map((r) => ({ ...r, permissions: cloneMatrix(r.permissions) })),
-  )
+  const rolesQuery = useQuery({ ...rolesQueryOptions(), enabled: !hidden })
+  const roles = useMemo(() => rolesQuery.data?.roles ?? [], [rolesQuery.data])
+  const companies = useMemo(() => rolesQuery.data?.companies ?? [], [rolesQuery.data])
   const [view, setView] = useState<View>({ mode: 'list' })
   const [draftSearch, setDraftSearch] = useState('')
   const [search, setSearch] = useState('')
@@ -50,6 +51,7 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
         scope: r.scope,
         description: r.description,
         permissions: cloneMatrix(r.permissions),
+        companyId: r.companyId,
       }
     }
     return {
@@ -65,62 +67,31 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
     setPage(1)
   }
 
+  const saveMutation = useSaveRoleMutation(backToList)
+  const deleteMutation = useDeleteRoleMutation(() => setDeleteId(null))
+
   const onSaveRole = (values: RoleFormValues) => {
-    if (view.mode !== 'form') return
-    if (view.formMode === 'create') {
-      setRoles((list) => [
-        {
-          id: `role-${Date.now()}`,
-          name: values.name,
-          description: values.description,
-          userCount: 0,
-          scope: values.scope,
-          kind: 'custom',
-          permissions: cloneMatrix(values.permissions),
-        },
-        ...list,
-      ])
-      showToast('Đã tạo vai trò thành công', 'success')
-    } else if (view.roleId) {
-      setRoles((list) =>
-        list.map((r) =>
-          r.id === view.roleId
-            ? {
-                ...r,
-                name: values.name,
-                description: values.description,
-                scope: values.scope,
-                permissions: cloneMatrix(values.permissions),
-              }
-            : r,
-        ),
-      )
-      showToast('Đã cập nhật vai trò thành công', 'success')
-    }
-    backToList()
+    if (view.mode !== 'form' || saveMutation.isPending) return
+    const editing = view.formMode === 'edit'
+    saveMutation.mutate({
+      id: editing ? view.roleId : undefined,
+      name: values.name,
+      companyId: values.companyId,
+      permissions: values.permissions,
+      okMsg: editing ? 'Đã cập nhật vai trò thành công' : 'Đã tạo vai trò thành công',
+    })
   }
 
-  const onClone = (role: MockRole) => {
+  const onClone = (role: Role) => {
+    if (saveMutation.isPending) return
     const baseName = `${role.name} (bản sao)`
     let name = baseName
     let i = 2
-    while (roles.some((r) => r.name.toLowerCase() === name.toLowerCase() && r.scope === role.scope)) {
+    while (roles.some((r) => r.name.toLowerCase() === name.toLowerCase() && r.companyId === role.companyId)) {
       name = `${baseName} ${i}`
       i += 1
     }
-    setRoles((list) => [
-      {
-        id: `role-${Date.now()}`,
-        name,
-        description: role.description,
-        userCount: 0,
-        scope: role.scope === 'system' ? 'enterprise' : role.scope,
-        kind: 'custom',
-        permissions: cloneMatrix(role.permissions),
-      },
-      ...list,
-    ])
-    showToast('Đã nhân bản vai trò', 'success')
+    saveMutation.mutate({ name, companyId: role.companyId, permissions: role.permissions, okMsg: 'Đã nhân bản vai trò' })
   }
 
   return (
@@ -129,6 +100,7 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
         <RoleFormView
           mode={view.formMode}
           roles={roles}
+          companies={companies}
           initial={formInitial}
           editId={view.roleId}
           onCancel={backToList}
@@ -180,16 +152,20 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
                   <th className="px-4 py-3 font-semibold">Vai trò</th>
                   <th className="px-4 py-3 font-semibold">Mô tả</th>
                   <th className="px-4 py-3 font-semibold">Số người dùng</th>
-                  <th className="px-4 py-3 font-semibold">Phạm vi</th>
+                  <th className="px-4 py-3 font-semibold">Doanh nghiệp</th>
                   <th className="px-4 py-3 font-semibold">Loại</th>
                   <th className="px-4 py-3 font-semibold" />
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {rolesQuery.isPending || rolesQuery.isError || rows.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center text-text-muted">
-                      Không có vai trò phù hợp
+                      {rolesQuery.isPending
+                        ? 'Đang tải dữ liệu...'
+                        : rolesQuery.isError
+                          ? rolesQuery.error.message
+                          : 'Không có vai trò phù hợp'}
                     </td>
                   </tr>
                 ) : (
@@ -216,9 +192,9 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
                             <span className="font-semibold text-text-main">{role.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-text-muted">{role.description}</td>
+                        <td className="px-4 py-3.5 text-text-muted">{role.description || '—'}</td>
                         <td className="px-4 py-3.5 text-text-muted">{role.userCount}</td>
-                        <td className="px-4 py-3.5 text-text-muted">{scopeLabel(role.scope)}</td>
+                        <td className="px-4 py-3.5 text-text-muted">{role.companyName || '—'}</td>
                         <td className="px-4 py-3.5">
                           <span
                             className={`inline-flex rounded-md px-2 py-0.5 text-[0.7rem] font-semibold ring-1 ring-inset ${kindBadgeClass(role.kind)}`}
@@ -319,9 +295,7 @@ export function RolesSection({ hidden }: { hidden: boolean }) {
             setDeleteId(null)
             return
           }
-          setRoles((list) => list.filter((r) => r.id !== deleteRole.id))
-          showToast('Đã xóa vai trò', 'success')
-          setDeleteId(null)
+          if (!deleteMutation.isPending) deleteMutation.mutate(deleteRole.id)
         }}
       />
     </ContentSection>

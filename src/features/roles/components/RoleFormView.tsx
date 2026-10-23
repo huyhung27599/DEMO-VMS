@@ -14,14 +14,14 @@ import {
   FEATURES,
   PERM_ACTIONS,
   type FeatureId,
-  type MockRole,
+  type Role,
   type PermAction,
-  type RoleScope,
-} from '../mockData'
+} from '../types'
 
 type RoleFormViewProps = {
   mode: 'create' | 'edit'
-  roles: MockRole[]
+  roles: Role[]
+  companies: { id: string; name: string }[]
   initial: RoleFormValues
   editId?: string
   onCancel: () => void
@@ -34,6 +34,7 @@ const sectionTitle = 'mb-3 text-[0.7rem] font-bold tracking-[0.08em] text-[#94a3
 export function RoleFormView({
   mode,
   roles,
+  companies,
   initial,
   editId,
   onCancel,
@@ -116,17 +117,23 @@ export function RoleFormView({
               />
             </div>
             <div>
-              <label htmlFor="role-scope" className={labelClass}>
-                Phạm vi áp dụng
+              <label htmlFor="role-company" className={labelClass}>
+                Doanh nghiệp <span className="text-danger">*</span>
               </label>
+              {/* mergeUserRole: cid bắt buộc, sửa vai trò không đổi được doanh nghiệp */}
               <select
-                id="role-scope"
+                id="role-company"
                 className={modalInputClass}
-                value={values.scope}
-                onChange={(e) => setValues((v) => ({ ...v, scope: e.target.value as RoleScope }))}
+                disabled={mode === 'edit'}
+                value={values.companyId}
+                onChange={(e) => setValues((v) => ({ ...v, companyId: e.target.value }))}
               >
-                <option value="enterprise">Theo doanh nghiệp</option>
-                <option value="system">Toàn hệ thống</option>
+                <option value="">Chọn doanh nghiệp</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="sm:col-span-2">
@@ -136,7 +143,8 @@ export function RoleFormView({
               <input
                 id="role-desc"
                 className={modalInputClass}
-                placeholder="Mô tả ngắn mục đích của vai trò"
+                placeholder="808gps chưa hỗ trợ mô tả vai trò"
+                disabled
                 value={values.description}
                 onChange={(e) => setValues((v) => ({ ...v, description: e.target.value }))}
               />

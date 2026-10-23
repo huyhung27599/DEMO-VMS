@@ -1,10 +1,10 @@
 import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalBody, ModalFooter } from '../../../shared/ui/Modal'
-import type { MockRole } from '../mockData'
+import type { Role } from '../types'
 
 type Props = {
   open: boolean
-  role: MockRole | null
+  role: Role | null
   onClose: () => void
   onConfirm: () => void
 }
