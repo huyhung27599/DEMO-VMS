@@ -10,6 +10,15 @@ import type { JournalEntry } from '../lib'
 import { resetPlaybackStore, usePlaybackStore } from '../store'
 import { resetTrackMapController, setTrackPoints } from '../trackMapController'
 import { RightPanel } from './RightPanel'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { createQueryClient } from '../../../shared/query/queryClient'
+
+// DayEventsPanel dùng useQuery → cần QueryClientProvider
+const ui = () => (
+  <QueryClientProvider client={createQueryClient()}>
+    <RightPanel />
+  </QueryClientProvider>
+)
 
 const entries: JournalEntry[] = [
   { type: 'start', idx: 0, p: { lat: 10, lng: 106, time: '2026-10-19 08:00:00', addr: '<b>Kho</b>' } },
@@ -49,7 +58,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
       timeline: { kind: 'entries', entries, places: { 2: 'Địa điểm: Hà Nội' }, active: null },
       timelineCount: '3 sự kiện · 1 đỗ xe',
     })
-    render(<RightPanel />)
+    render(ui())
     expect(document.getElementById('pb-timeline-count')).toHaveTextContent('3 sự kiện · 1 đỗ xe')
     const items = document.querySelectorAll<HTMLElement>('.pb-timeline-item')
     expect(items).toHaveLength(3)
@@ -78,7 +87,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
       timeline: { kind: 'empty' },
       stats: { distance: '1.00 km', maxspeed: '50 km/h', duration: '--', points: '7' },
     })
-    render(<RightPanel />)
+    render(ui())
     expect(screen.getByText('Không có dữ liệu GPS')).toBeInTheDocument()
     expect(document.getElementById('pb-stat-distance')).toHaveTextContent('1.00 km')
     expect(document.getElementById('pb-stat-points')).toHaveTextContent('7')
@@ -86,7 +95,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
 
   it('nút bản đồ chỉ hoạt động sau init; play đổi icon stop; fullscreen overlay đổi title/icon + class card', async () => {
     usePlaybackStore.setState({ rightTab: 'map' })
-    render(<RightPanel />)
+    render(ui())
     const play = document.getElementById('pb-track-play-btn') as HTMLButtonElement
     const fs = document.getElementById('pb-map-fullscreen-btn') as HTMLButtonElement
     setTrackPoints([{ lat: 10, lng: 106, speed: 0, time: '2026-10-19 08:00:00', addr: '' }])
@@ -112,7 +121,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
 
   it('placeholder ẩn và legend hiện sau khi bản đồ có track', () => {
     usePlaybackStore.setState({ rightTab: 'map' })
-    render(<RightPanel />)
+    render(ui())
     const placeholder = screen.getByText('Bản đồ hành trình sau khi tìm kiếm').parentElement as HTMLElement
     expect(placeholder).toBeVisible()
     act(() => usePlaybackStore.setState({ trackMapInitialized: true, trackLegend: 2 }))

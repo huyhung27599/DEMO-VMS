@@ -1,8 +1,46 @@
 import { useState } from 'react'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { api } from '../../../shared/api/endpoints'
 import { showToast } from '../../../shared/ui/toastStore'
-import { DEMO_DAY_EVENTS, type DayEvent, type DayEventTone } from '../mockData'
+import { ALARM_NAME_MAP, ALARM_TYPE_MAP, getSeverity, today } from '../../dashboard/lib'
+import { aiEventTime } from '../../vehicle/meta'
 import { usePlaybackStore } from '../store'
 import { findFileMetaForTime, showPlaybackIframe } from '../videoController'
+
+export type DayEventTone = 'critical' | 'warn' | 'info'
+
+export type DayEvent = {
+  id: string
+  title: string
+  time: string
+  tone: DayEventTone
+}
+
+const TONE: Record<ReturnType<typeof getSeverity>, DayEventTone> = { critical: 'critical', warning: 'warn', info: 'info' }
+
+/** Sự kiện AI của thiết bị trong ngày (syncAiEventsLocal — cùng nguồn với dashboard/liveview). */
+export function dayEventsQueryOptions(devIdno: string, ymd: string) {
+  return queryOptions({
+    queryKey: ['playback', 'dayEvents', devIdno, ymd] as const,
+    enabled: !!devIdno,
+    queryFn: async (): Promise<DayEvent[]> => {
+      const res = await api.syncAiEventsLocal(devIdno, '')
+      const events = res && res.result === 0 && Array.isArray(res.events) ? (res.events as Record<string, unknown>[]) : []
+      return events
+        .filter((e) => String(e.devIdno || e.did || devIdno) === devIdno && aiEventTime(e).startsWith(ymd))
+        .sort((a, b) => aiEventTime(a).localeCompare(aiEventTime(b)))
+        .map((e, i) => {
+          const t = Number(e.alarmType ?? e.ty ?? e.armType)
+          return {
+            id: String(e.id ?? `${aiEventTime(e)}-${i}`),
+            title: ALARM_TYPE_MAP[t] || ALARM_NAME_MAP[t] || `Báo động #${t}`,
+            time: aiEventTime(e).slice(11, 16),
+            tone: TONE[getSeverity(t)],
+          }
+        })
+    },
+  })
+}
 
 const DOT: Record<DayEventTone, string> = {
   critical: 'bg-[#e11d48]',
@@ -28,7 +66,10 @@ function seekToDayEvent(ev: DayEvent): void {
 }
 
 export function DayEventsPanel() {
-  const [activeId, setActiveId] = useState(DEMO_DAY_EVENTS[0]?.id ?? '')
+  const [activeId, setActiveId] = useState('')
+  const currentDevice = usePlaybackStore((s) => s.currentDevice) || ''
+  const ymd = usePlaybackStore((s) => (s.beginTime || s.lastSearchRange.beginFmt).slice(0, 10)) || today()
+  const events = useQuery(dayEventsQueryOptions(currentDevice, ymd)).data ?? []
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[#eef2f6] bg-white shadow-sm">
@@ -36,7 +77,12 @@ export function DayEventsPanel() {
         <h3 className="m-0 text-[0.9rem] font-bold text-[#0f172a]">Sự kiện trong ngày</h3>
       </div>
       <ul className="m-0 flex list-none flex-1 flex-col gap-1 overflow-y-auto p-2">
-        {DEMO_DAY_EVENTS.map((ev) => {
+        {events.length === 0 ? (
+          <li className="px-3 py-6 text-center text-[0.8rem] text-[#94a3b8]">
+            {currentDevice ? 'Không có sự kiện trong ngày' : 'Chọn xe và tìm kiếm để xem sự kiện'}
+          </li>
+        ) : null}
+        {events.map((ev) => {
           const selected = ev.id === activeId
           return (
             <li key={ev.id}>
