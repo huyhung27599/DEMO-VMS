@@ -11,15 +11,7 @@ import {
   normalizeId,
   today,
 } from './lib'
-import {
-  ALERT_BAR_COLORS,
-  DEMO_ALARM_TYPE_BARS,
-  DEMO_LATEST_ALERTS,
-  DEMO_TOP_VEHICLES,
-  getMockDeviceKpis,
-  MOCK_PLATE_DRIVERS,
-  MOCK_YESTERDAY_ALARM_COUNT,
-} from './mockData'
+import { ALERT_BAR_COLORS } from './mockData'
 import {
   useDashboardStore,
   type AlarmTypeBar,
@@ -71,24 +63,13 @@ function resolveDriverName(plate: string, devIdno: string): string {
   for (const [k, name] of Object.entries(map)) {
     if (plate && (k.includes(plate) || plate.includes(k))) return name
   }
-  return MOCK_PLATE_DRIVERS[plate] || '—'
+  return '—'
 }
 
-function applyMockDeviceKpis(): void {
-  const d = getMockDeviceKpis()
-  setKpi('devicesOnline', d.online)
-  setKpi('devicesTotal', d.total)
-  setKpi('devicesLost', d.lost)
-}
-
-/** Build bar / top / table from cached alarms (real API). Empty → demo mockup. */
+/** Build bar / top / table from cached alarms (real API). Empty → empty state. */
 export function renderAlarmViews(alarms: Row[] | null | undefined): void {
   if (!alarms || !alarms.length) {
-    set({
-      alarmTypeBars: DEMO_ALARM_TYPE_BARS.map((b) => ({ ...b })),
-      topVehicles: DEMO_TOP_VEHICLES.map((r) => ({ ...r })),
-      latestAlerts: DEMO_LATEST_ALERTS.map((r) => ({ ...r })),
-    })
+    set({ alarmTypeBars: [], topVehicles: [], latestAlerts: [] })
     return
   }
 
@@ -265,6 +246,14 @@ export async function loadVehicleStatus(): Promise<void> {
 
     void offline
     setKpi('onlineVehicles', online)
+
+    // KPI thiết bị: mỗi dòng getDeviceStatus là một thiết bị; không có thì dùng getDeviceOlStatus
+    const isOl = (r: Row) => [r.ol, r.online].some((x) => x === 1 || x === '1')
+    const devRows = statusRows.length ? statusRows : onlineRows
+    const devOnline = devRows.filter(isOl).length
+    setKpi('devicesTotal', devRows.length)
+    setKpi('devicesOnline', devOnline)
+    setKpi('devicesLost', devRows.length - devOnline)
   } catch (e) {
     console.warn('loadVehicleStatus failed:', e)
   }
@@ -311,9 +300,13 @@ export async function loadAlarms(): Promise<void> {
     const todayStr = today()
     const todayCount = critical.filter((a) => String(a.begintime || '').startsWith(todayStr)).length
     setKpi('alarmsToday', todayCount)
-    // Delta vs hôm qua: mock (chưa có API lịch sử trên dashboard)
+    // Delta vs hôm qua: syncAiEventsLocal trả sự kiện nhiều ngày, đếm ngày hôm qua từ cùng danh sách
+    const y = new Date()
+    y.setDate(y.getDate() - 1)
+    const yesterdayStr = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`
+    const yesterdayCount = critical.filter((a) => String(a.begintime || '').startsWith(yesterdayStr)).length
     useDashboardStore.setState((s) => ({
-      kpi: { ...s.kpi, alarmsDelta: todayCount - MOCK_YESTERDAY_ALARM_COUNT },
+      kpi: { ...s.kpi, alarmsDelta: todayCount - yesterdayCount },
     }))
 
     renderAlarmViews(_cachedAlarms)
@@ -333,7 +326,6 @@ export async function pollRealtimeAlarms(): Promise<void> {
 
 export async function refresh(): Promise<void> {
   set({ refreshing: true })
-  applyMockDeviceKpis()
 
   try {
     await Promise.allSettled([loadVehicles(), loadDriverMapping()])

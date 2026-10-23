@@ -7,7 +7,6 @@ vi.mock('../../shared/api/endpoints', () => ({
 import { api } from '../../shared/api/endpoints'
 import { loadAlarms, pollRealtimeAlarms, getCachedAlarms, resetDashboardModuleState } from './loaders'
 import { today } from './lib'
-import { MOCK_YESTERDAY_ALARM_COUNT } from './mockData'
 import { resetDashboardStore, useDashboardStore } from './store'
 
 const sync = vi.mocked(api.syncAiEventsLocal)
@@ -47,17 +46,20 @@ describe('loadAlarms', () => {
     expect(got[1].guid).toBe('ai-1')
   })
 
-  it('KPI cảnh báo hôm nay + bảng mới nhất tối đa 8; delta mock so với hôm qua', async () => {
-    const events = Array.from({ length: 9 }, (_, i) => ({
+  it('KPI cảnh báo hôm nay + bảng mới nhất tối đa 8; delta so với số sự kiện hôm qua', async () => {
+    const y = new Date()
+    y.setDate(y.getDate() - 1)
+    const Y = `${y.getFullYear()}-${String(y.getMonth() + 1).padStart(2, '0')}-${String(y.getDate()).padStart(2, '0')}`
+    const events = Array.from({ length: 11 }, (_, i) => ({
       alarmType: 618,
       vehiIdno: `V${i}`,
-      fileTime: `${i < 8 ? T : '2000-01-01'} 0${i}:00:00`,
+      fileTime: `${i < 8 ? T : i < 10 ? Y : '2000-01-01'} 0${i % 10}:00:00`,
     }))
     sync.mockResolvedValue({ result: 0, events })
     await loadAlarms()
     const s = useDashboardStore.getState()
     expect(s.kpi.alarmsToday).toBe(8)
-    expect(s.kpi.alarmsDelta).toBe(8 - MOCK_YESTERDAY_ALARM_COUNT)
+    expect(s.kpi.alarmsDelta).toBe(8 - 2)
     expect(s.latestAlerts).toHaveLength(8)
     expect(s.latestAlerts[0].plate).toBe('V7')
     expect(s.latestAlerts[0].level).toBe('high')
@@ -65,12 +67,12 @@ describe('loadAlarms', () => {
     expect(s.topVehicles[0]?.plate).toBeDefined()
   })
 
-  it('result khác 0 hoặc events không phải mảng -> KPI 0, hiển thị demo mockup', async () => {
+  it('result khác 0 hoặc events không phải mảng -> KPI 0, bảng/biểu đồ rỗng', async () => {
     sync.mockResolvedValue({ result: 5 })
     await loadAlarms()
     expect(useDashboardStore.getState().kpi.alarmsToday).toBe(0)
-    expect(useDashboardStore.getState().latestAlerts.length).toBeGreaterThan(0)
-    expect(useDashboardStore.getState().alarmTypeBars[0]?.name).toBe('Mệt mỏi')
+    expect(useDashboardStore.getState().latestAlerts).toEqual([])
+    expect(useDashboardStore.getState().alarmTypeBars).toEqual([])
   })
 
   it('lỗi API -> KPI "0" (chuỗi) như bản gốc', async () => {

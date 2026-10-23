@@ -34,11 +34,10 @@ vi.mock('../../shared/api/endpoints', () => ({
 
 import { BASE_URL } from '../../shared/api/client'
 import { dashboardKeys } from './queries'
-import { getMockDeviceKpis } from './mockData'
 import { loadVehicleStatus, refresh, resetDashboardModuleState } from './loaders'
 import { resetDashboardStore, useDashboardStore } from './store'
 
-describe('refresh() - API thật + mock thiết bị', () => {
+describe('refresh() - API thật', () => {
   const fetchMock = vi.fn(async (url: string) => {
     calls.push(`fetch:${url}`)
     return { ok: true, json: async () => ({ d1: 'Tài xế A' }) }
@@ -72,17 +71,17 @@ describe('refresh() - API thật + mock thiết bị', () => {
     expect(fetchMock).toHaveBeenCalledWith(`${BASE_URL}driver/mapping`)
   })
 
-  it('cập nhật KPI sau refresh (xe/online/tài xế thật; thiết bị mock)', async () => {
+  it('cập nhật KPI sau refresh (xe/online/tài xế/thiết bị thật)', async () => {
     await refresh()
     const s = useDashboardStore.getState()
-    const devices = getMockDeviceKpis()
     expect(s.kpi.totalVehicles).toBe(2)
     expect(s.kpi.onlineVehicles).toBe(1)
     expect(s.kpi.alarmsToday).toBe(0)
     expect(s.kpi.totalDrivers).toBe(4)
-    expect(s.kpi.devicesOnline).toBe(devices.online)
-    expect(s.kpi.devicesTotal).toBe(devices.total)
-    expect(s.kpi.devicesLost).toBe(devices.lost)
+    // getDeviceStatus trả 1 thiết bị online
+    expect(s.kpi.devicesOnline).toBe(1)
+    expect(s.kpi.devicesTotal).toBe(1)
+    expect(s.kpi.devicesLost).toBe(0)
     expect(s.lastUpdated).toMatch(/^Tổng quan vận hành đội xe - Cập nhật lúc \d\d:\d\d$/)
     expect(s.refreshing).toBe(false)
   })
