@@ -1,4 +1,4 @@
-import { ROLES, STATUS_LABEL, type MockUser, type Persona, type RoleChip, type UserStatus } from './mockData'
+import { ROLES, STATUS_LABEL, type MockUser, type RoleChip, type UserStatus } from './mockData'
 
 export const PAGE_SIZE = 10
 
@@ -48,16 +48,9 @@ export function statusDotClass(status: UserStatus): string {
   }
 }
 
-export function filterUsers(
-  users: MockUser[],
-  filters: UserFilters,
-  persona: Persona,
-  lockedEnterpriseId: string,
-): MockUser[] {
+export function filterUsers(users: MockUser[], filters: UserFilters): MockUser[] {
   const q = filters.search.trim().toLowerCase()
   return users.filter((u) => {
-    if (persona === 'enterprise-admin' && u.enterpriseId !== lockedEnterpriseId) return false
-    if (persona === 'enterprise-admin' && u.roleIds.includes('role-super')) return false
     if (filters.enterpriseId && u.enterpriseId !== filters.enterpriseId) return false
     if (filters.roleId && !u.roleIds.includes(filters.roleId)) return false
     if (filters.status && u.status !== filters.status) return false

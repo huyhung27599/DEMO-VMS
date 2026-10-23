@@ -51,13 +51,13 @@ describe('darkenColor / lightenColor', () => {
 
 describe('getTrackingIconSvg', () => {
   it.each([
-    ['car', 'car.png'],
-    ['truck', 'truck.png'],
-    ['navigation', 'navigation.png'],
-  ])('type %s online -> ảnh PNG img/markers/%s không filter', (type, png) => {
+    ['car', 'car.png', 38],
+    ['truck', 'truck.png', 38],
+    ['navigation', 'navigation.png', 20],
+  ])('type %s online -> ảnh PNG img/markers/%s không filter', (type, png, size) => {
     const html = getTrackingIconSvg(type, '#10b981', true)
     expect(html).toBe(
-      `<img src="img/markers/${png}" width="38" height="38" style="filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4));z-index:2;position:relative; ; object-fit: contain;" />`,
+      `<img src="img/markers/${png}" width="${size}" height="${size}" style="width:${size}px;height:${size}px;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4));z-index:2;position:relative; ; object-fit: contain;" />`,
     )
   })
 

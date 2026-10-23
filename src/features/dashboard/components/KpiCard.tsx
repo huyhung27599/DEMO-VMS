@@ -1,61 +1,71 @@
 import type { ReactNode } from 'react'
 
-// .kpi-card + .kpi-blue/green/gray/teal/red/purple (styles2.css:2253-2400)
-const COLORS = {
-  blue: 'bg-[linear-gradient(135deg,#2563eb,#3b82f6)]',
-  green: 'bg-[linear-gradient(135deg,#059669,#10b981)]',
-  gray: 'bg-[linear-gradient(135deg,#475569,#64748b)]',
-  teal: 'bg-[linear-gradient(135deg,#0891b2,#06b6d4)]',
-  red: 'bg-[linear-gradient(135deg,#b91c1c,#ef4444)]',
-  purple: 'bg-[linear-gradient(135deg,#7c3aed,#8b5cf6)]',
+/**
+ * Khớp mockup: 4 thẻ đặc (navy / đỏ / vàng / xám), không dùng card trắng + viền.
+ */
+const VARIANTS = {
+  navy: {
+    card: 'bg-[#0f172a] text-white shadow-[0_8px_24px_rgba(15,23,42,0.28)]',
+    label: 'text-white/70',
+    value: 'text-white',
+    sub: 'text-white/75',
+    iconWrap: 'bg-white/12 text-white',
+  },
+  red: {
+    card: 'bg-[#e11d48] text-white shadow-[0_8px_24px_rgba(225,29,72,0.28)]',
+    label: 'text-white/75',
+    value: 'text-white',
+    sub: 'text-white/80',
+    iconWrap: 'bg-white/15 text-white',
+  },
+  amber: {
+    card: 'bg-[#fbbf24] text-[#1e293b] shadow-[0_8px_24px_rgba(251,191,36,0.35)]',
+    label: 'text-[#78350f]/80',
+    value: 'text-[#1e293b]',
+    sub: 'text-[#78350f]/85',
+    iconWrap: 'bg-[#1e293b]/10 text-[#78350f]',
+  },
+  slate: {
+    card: 'border border-[#e2e8f0] bg-[#f8fafc] text-[#1e293b] shadow-sm',
+    label: 'text-[#64748b]',
+    value: 'text-[#1e293b]',
+    sub: 'text-[#64748b]',
+    iconWrap: 'bg-[#e2e8f0] text-[#475569]',
+  },
 } as const
 
 type KpiCardProps = {
   id: string
-  color: keyof typeof COLORS
+  variant: keyof typeof VARIANTS
   icon: string
   label: string
   valueId: string
   value: ReactNode
   sub: ReactNode
-  /** undefined = không có thanh tiến trình (card báo động có chấm nhấp nháy) */
-  bar?: { id?: string; width: number; faded?: boolean }
   pulse?: boolean
 }
 
-export function KpiCard({ id, color, icon, label, valueId, value, sub, bar, pulse = false }: KpiCardProps) {
+export function KpiCard({ id, variant, icon, label, valueId, value, sub, pulse = false }: KpiCardProps) {
+  const v = VARIANTS[variant]
   return (
     <div
       id={id}
-      className={`dashboard-kpi-card relative cursor-default overflow-hidden rounded-lg px-5 pt-[1.1rem] pb-3 text-white shadow-[0_4px_15px_rgba(0,0,0,0.15)] transition-[transform,box-shadow] duration-250 ease-[cubic-bezier(0.4,0,0.2,1)] hover:-translate-y-[3px] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] ${COLORS[color]}`}
+      className={`dashboard-kpi-card relative overflow-hidden rounded-2xl px-5 py-4 transition-[transform,box-shadow] duration-250 ease-out hover:-translate-y-0.5 ${v.card}`}
     >
-      <div className="relative z-1 flex items-start gap-[0.85rem]">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-white/18 text-[1.2rem]">
-          <i className={`fa-solid ${icon}`}></i>
-        </div>
+      <div className="relative z-1 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="overflow-hidden text-[0.72rem] font-medium tracking-[0.04em] text-ellipsis whitespace-nowrap uppercase opacity-85">
-            {label}
-          </div>
-          <div id={valueId} className="my-[0.15rem] text-[1.85rem] leading-[1.1] font-bold tracking-[-0.02em]">
+          <div className={`text-[0.7rem] font-semibold tracking-[0.08em] uppercase ${v.label}`}>{label}</div>
+          <div id={valueId} className={`mt-1.5 text-[2.35rem] leading-none font-bold tracking-tight ${v.value}`}>
             {value}
           </div>
-          <div className="overflow-hidden text-[0.7rem] text-ellipsis whitespace-nowrap opacity-75">{sub}</div>
+          <div className={`mt-2.5 text-[0.8rem] ${v.sub}`}>{sub}</div>
+        </div>
+        <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl ${v.iconWrap}`}>
+          <i className={`fa-solid ${icon} text-[1.25rem]`} aria-hidden />
         </div>
       </div>
-      {bar ? (
-        <div className="relative z-1 mt-3 h-1 overflow-hidden rounded-xs bg-white/20">
-          <div
-            id={bar.id}
-            className={`h-full rounded-xs transition-[width] duration-800 ease-in-out ${
-              bar.faded ? 'bg-white/30' : 'bg-white/60'
-            }`}
-            style={{ width: `${bar.width}%` }}
-          ></div>
-        </div>
-      ) : null}
       {pulse ? (
-        <div className="dashboard-pulse absolute top-3 right-3 z-2 size-[10px] rounded-full bg-white"></div>
+        <div className="dashboard-pulse absolute top-3.5 right-3.5 z-2 size-2.5 rounded-full bg-white" />
       ) : null}
     </div>
   )

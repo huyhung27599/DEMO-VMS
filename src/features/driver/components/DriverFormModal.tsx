@@ -9,6 +9,7 @@ import {
   portraitServerDisplayUrl,
   type Loose,
 } from '../lib'
+import { DRIVER_ENTERPRISES, LICENSE_CLASS_OPTIONS } from '../mockData'
 import { buildSaveDriverInput, useSaveDriverMutation } from '../mutations'
 import { closeDriverModal, useDriverStore } from '../store'
 import { PortraitGrid } from './PortraitGrid'
@@ -28,12 +29,25 @@ const readAsDataUrl = (file: File): Promise<string | null> =>
 /** openDriverModal(driver): giá trị điền vào form khi sửa. */
 function initialFormValues(driver: Loose | null) {
   if (!driver) {
-    return { id: '', jobNum: '', name: '', contact: '', cardNumber: '', sex: '1', birth: '', licenseNum: '', licenseType: '' }
+    return {
+      id: '',
+      jobNum: '',
+      name: '',
+      contact: '',
+      cardNumber: '',
+      sex: '1',
+      birth: '',
+      licenseNum: '',
+      licenseType: '',
+      company: 'GEIC',
+      licenseExpire: '',
+    }
   }
   // API queryDriverList uses `bt` as date of birth (ms timestamp)
   let birth = formatDateMsToDateInput(driver.bt)
   if (!birth && driver.birthday) birth = String(driver.birthday).split(' ')[0]
   else if (!birth && driver.birthDate) birth = String(driver.birthDate).split(' ')[0]
+  const licenseType = String(driver.licenseType || driver.driverType || 'B2')
   return {
     id: String(driver.id || ''),
     jobNum: String(driver.jn || ''),
@@ -44,22 +58,50 @@ function initialFormValues(driver: Loose | null) {
     sex: String(driver.sx || '1'),
     birth,
     licenseNum: String(driver.ln || driver.drivelNum || driver.dl || ''),
-    licenseType: String(driver.licenseType || driver.driverType || ''),
+    licenseType,
+    company: String(driver.companyName || driver.coName || 'GEIC'),
+    licenseExpire: String(driver.licenseExpire || driver.le || ''),
   }
 }
 
-function Field({ label, icon, htmlFor, children, wide = false }: { label: ReactNode; icon: string; htmlFor?: string; children: ReactNode; wide?: boolean }) {
+function initialLetter(name: string): string {
+  const t = name.trim()
+  if (!t) return '?'
+  const parts = t.split(/\s+/)
+  return (parts[parts.length - 1][0] || t[0]).toUpperCase()
+}
+
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <div className={`driver-modal-group flex flex-col ${wide ? 'col-span-2' : ''}`}>
-      <label htmlFor={htmlFor} className="driver-modal-label mb-[0.4rem] flex items-center gap-[0.4rem] text-[0.85rem] font-semibold text-[#475569]">
-        <i className={`fa-solid ${icon}`} style={{ color: '#94a3b8' }} aria-hidden="true"></i> {label}
-      </label>
+    <h4 className="col-span-2 mt-1 mb-0 border-t border-[#eef2f6] pt-5 text-[0.72rem] font-bold tracking-[0.08em] text-[#94a3b8] uppercase first:mt-0 first:border-t-0 first:pt-0">
       {children}
-    </div>
+    </h4>
   )
 }
 
-const hintClass = 'mt-[0.3rem] block text-[0.75rem] text-[#94a3b8]'
+function Field({
+  label,
+  htmlFor,
+  children,
+  wide = false,
+  hint,
+}: {
+  label: ReactNode
+  htmlFor?: string
+  children: ReactNode
+  wide?: boolean
+  hint?: ReactNode
+}) {
+  return (
+    <div className={`driver-modal-group flex flex-col ${wide ? 'col-span-2' : ''}`}>
+      <label htmlFor={htmlFor} className="driver-modal-label mb-[0.4rem] text-[0.85rem] font-semibold text-[#475569]">
+        {label}
+      </label>
+      {children}
+      {hint ? <span className="mt-[0.3rem] block text-[0.75rem] text-[#94a3b8]">{hint}</span> : null}
+    </div>
+  )
+}
 
 /** Nội dung modal; được mount lại (key = openKey) mỗi lần mở, thay cho driverForm.reset(). */
 function DriverForm({ driver }: { driver: Loose | null }) {
@@ -67,6 +109,7 @@ function DriverForm({ driver }: { driver: Loose | null }) {
   const slotFileRef = useRef<HTMLInputElement>(null)
   const pendingPortraitSlot = useRef(-1)
   const values = initialFormValues(driver)
+  const isEdit = !!driver
   /** Ảnh mới chọn (base64) theo từng ô 0..4 — ưu tiên hiển thị hơn URL server */
   const [portraitLocalBase64, setPortraitLocalBase64] = useState<(string | null)[]>(emptySlots)
   /** Ảnh đã lưu trên server (URL) khi sửa tài xế */
@@ -81,6 +124,7 @@ function DriverForm({ driver }: { driver: Loose | null }) {
   const firstLocal = portraitLocalBase64.find((x) => !!x)
   const firstSrv = portraitServerUrls.find((x) => !!x)
   const previewSrc = firstLocal ? firstLocal : firstSrv ? portraitServerDisplayUrl(firstSrv) : ''
+  const photoCount = portraitLocalBase64.filter(Boolean).length + portraitServerUrls.filter(Boolean).length
 
   // #driver-photo-upload (driver.js:1795-1842)
   const onPhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -151,62 +195,199 @@ function DriverForm({ driver }: { driver: Loose | null }) {
     if (input) saveMutation.mutate(input)
   }
 
+  const letter = initialLetter(values.name)
+
   return (
     <>
-      <div className="flex items-center justify-between border-b border-[#e2e8f0] bg-linear-to-r from-[#f8fafc] to-[#f1f5f9] px-7 py-5">
-        {/* driverModalTitle.textContent = ... xóa luôn icon của markup ban đầu */}
-        <h3 id="driver-modal-title" className="m-0 flex items-center gap-3 text-xl font-bold text-[#1e293b]">
-          {driver ? 'Chỉnh sửa tài xế' : 'Thêm Tài xế mới'}
-        </h3>
+      <div className="flex items-start justify-between gap-3 border-b border-[#eef2f6] bg-white px-7 py-5">
+        <div>
+          <h3 id="driver-modal-title" className="m-0 text-xl font-bold text-[#0f172a]">
+            {isEdit ? 'Sửa tài xế' : 'Thêm tài xế'}
+          </h3>
+          <p className="mt-1 mb-0 text-[0.8rem] text-[#94a3b8]">
+            {isEdit
+              ? 'Cập nhật hồ sơ và ảnh nhận diện của tài xế'
+              : 'Tạo hồ sơ tài xế mới và đăng ký AI nhận diện khuôn mặt'}
+          </p>
+          {isEdit ? (
+            <p className="mt-2 mb-0 text-[0.78rem] text-[#94a3b8]">
+              Quản lý tài xế / <span className="font-semibold text-[#0f172a]">{values.name || '—'}</span>
+            </p>
+          ) : (
+            <p className="mt-2 mb-0 text-[0.78rem] text-[#94a3b8]">Quản lý tài xế / Thêm tài xế</p>
+          )}
+        </div>
         <button
           type="button"
           id="btn-close-driver-modal"
           aria-label="Đóng"
-          className="btn-close-nice flex size-8 cursor-pointer items-center justify-center rounded-full border border-border bg-white text-base text-[#64748b] shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-200 hover:bg-[#f1f5f9] hover:text-[#0f172a] focus-visible:outline-2 focus-visible:outline-primary"
+          className="btn-close-nice flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border bg-white text-base text-[#64748b] shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all duration-200 hover:bg-[#f1f5f9] hover:text-[#0f172a] focus-visible:outline-2 focus-visible:outline-primary"
           onClick={closeDriverModal}
         >
           <i className="fa-solid fa-xmark" aria-hidden="true"></i>
         </button>
       </div>
-      <div className="bg-white p-7">
-        <form id="driver-form" ref={formRef} className="grid grid-cols-2 gap-x-6 gap-y-5" onSubmit={(e) => e.preventDefault()}>
-          {/* Hidden ID used for modifying */}
-          <input type="hidden" id="driver-id" name="id" defaultValue={values.id} />
 
-          <Field label="Ảnh Chân Dung (Nhận diện AI)" icon="fa-camera-retro" htmlFor="driver-photo-upload" wide>
-            <div className="flex items-center gap-4">
-              <div
-                id="driver-photo-preview-container"
-                className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-dashed border-border bg-[#f1f5f9]"
-              >
-                {previewSrc ? (
-                  <img id="driver-photo-preview" src={previewSrc} alt="" className="block size-full object-cover" />
-                ) : (
-                  <i className="fa-solid fa-image text-[1.5rem] text-[#cbd5e1]" id="driver-photo-icon" aria-hidden="true"></i>
-                )}
-              </div>
-              <div className="grow">
-                <input
-                  type="file"
-                  id="driver-photo-upload"
-                  accept="image/*"
-                  multiple
-                  className="driver-modal-input cursor-pointer"
-                  data-max-images="5"
-                  onChange={onPhotoUpload}
-                />
-                <span className={hintClass}>
-                  Hệ thống AI yêu cầu tối đa 5 ảnh. Khuyến nghị: File .jpg, .png. Kích thước dưới 2MB/ảnh.
-                </span>
-              </div>
+      <div className="max-h-[min(70vh,640px)] overflow-y-auto bg-white px-7 py-6">
+        {isEdit ? (
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex size-14 items-center justify-center rounded-full bg-[#1e293b] text-lg font-bold text-white">
+              {letter}
             </div>
+            <div>
+              <div className="font-bold text-[#0f172a]">{values.name}</div>
+              <div className="text-sm text-[#94a3b8]">Mã: {values.jobNum}</div>
+            </div>
+          </div>
+        ) : null}
+
+        <form id="driver-form" ref={formRef} className="grid grid-cols-2 gap-x-5 gap-y-4" onSubmit={(e) => e.preventDefault()}>
+          <input type="hidden" id="driver-id" name="id" defaultValue={values.id} />
+          {/* Giữ field logic gốc (không có trên mockup) */}
+          <input type="hidden" id="driver-cardNumber" name="cardNumber" defaultValue={values.cardNumber} />
+          <input type="hidden" id="driver-sex" name="sex" defaultValue={values.sex} />
+          <input type="hidden" id="driver-birth" name="birth" defaultValue={values.birth || '1990-01-01'} />
+
+          <SectionTitle>Thông tin tài xế</SectionTitle>
+
+          <Field label={<>Họ và tên <span className="text-[#e11d48]">*</span></>} htmlFor="driver-name">
+            <input
+              type="text"
+              id="driver-name"
+              name="name"
+              className="driver-modal-input"
+              placeholder="VD: Nguyễn Văn An"
+              required
+              defaultValue={values.name}
+            />
           </Field>
 
+          <Field
+            label={
+              <>
+                Mã tài xế {isEdit ? null : <span className="text-[#e11d48]">*</span>}
+              </>
+            }
+            htmlFor="driver-jobNum"
+            hint={
+              isEdit
+                ? 'Mã định danh, không thể thay đổi'
+                : 'Dùng để định danh khi đăng nhập Box AI.'
+            }
+          >
+            <input
+              type="text"
+              id="driver-jobNum"
+              name="jobNum"
+              className="driver-modal-input"
+              placeholder="VD: 11111"
+              required
+              readOnly={isEdit}
+              defaultValue={values.jobNum}
+            />
+          </Field>
+
+          <Field label="Số điện thoại" htmlFor="driver-contact">
+            <input
+              type="text"
+              id="driver-contact"
+              name="contact"
+              className="driver-modal-input"
+              placeholder="0901 234 567"
+              defaultValue={values.contact}
+            />
+          </Field>
+
+          <Field label={<>Doanh nghiệp <span className="text-[#e11d48]">*</span></>} htmlFor="driver-company">
+            <select id="driver-company" className="driver-modal-input" defaultValue={values.company} aria-label="Doanh nghiệp">
+              {DRIVER_ENTERPRISES.map((e) => (
+                <option key={e.id} value={e.name}>
+                  {e.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <SectionTitle>Giấy phép lái xe</SectionTitle>
+
+          <Field label={<>Hạng GPLX <span className="text-[#e11d48]">*</span></>} htmlFor="driver-licenseType">
+            <select
+              id="driver-licenseType"
+              name="licenseType"
+              className="driver-modal-input"
+              required
+              defaultValue={values.licenseType}
+            >
+              <option value="">Chọn hạng</option>
+              {!LICENSE_CLASS_OPTIONS.includes(values.licenseType as (typeof LICENSE_CLASS_OPTIONS)[number]) &&
+              values.licenseType ? (
+                <option value={values.licenseType}>{values.licenseType}</option>
+              ) : null}
+              {LICENSE_CLASS_OPTIONS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Số GPLX" htmlFor="driver-licenseNum">
+            <input
+              type="text"
+              id="driver-licenseNum"
+              name="licenseNum"
+              className="driver-modal-input"
+              placeholder="79-012345"
+              defaultValue={values.licenseNum}
+            />
+          </Field>
+
+          <Field label="Ngày hết hạn" htmlFor="driver-licenseExpire" wide>
+            <input
+              type="date"
+              id="driver-licenseExpire"
+              className="driver-modal-input"
+              defaultValue={/^\d{4}-\d{2}-\d{2}/.test(values.licenseExpire) ? values.licenseExpire.slice(0, 10) : ''}
+            />
+          </Field>
+
+          <SectionTitle>AI nhận diện khuôn mặt</SectionTitle>
+
           <div className="driver-modal-group col-span-2 flex flex-col">
-            <span className="driver-modal-label mb-[0.4rem] flex items-center gap-[0.4rem] text-[0.85rem] font-semibold text-[#475569]">
-              <i className="fa-solid fa-database" style={{ color: '#94a3b8' }} aria-hidden="true"></i> Cơ sở dữ liệu khuôn mặt
-              (Portrait Library)
-            </span>
+            <span className="driver-modal-label mb-[0.4rem] text-[0.85rem] font-semibold text-[#475569]">Ảnh tham chiếu</span>
+
+            {/* Preview ẩn/hiện — giữ #driver-photo-preview cho test upload */}
+            <div className="sr-only" aria-hidden={!previewSrc}>
+              <div id="driver-photo-preview-container">
+                {previewSrc ? <img id="driver-photo-preview" src={previewSrc} alt="" /> : <i id="driver-photo-icon" />}
+              </div>
+            </div>
+
+            {!isEdit && photoCount === 0 ? (
+              <label
+                htmlFor="driver-photo-upload"
+                className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#e2e8f0] bg-[#f8fafc] px-4 py-8 text-center transition hover:border-[#e11d48]/40 hover:bg-white"
+              >
+                <i className="fa-solid fa-face-viewfinder text-2xl text-[#94a3b8]" aria-hidden />
+                <span className="text-[0.85rem] font-medium text-[#64748b]">
+                  Tải lên 3-5 ảnh khuôn mặt rõ nét để đăng ký nhận diện
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-xl border border-[#e2e8f0] bg-white px-3 py-1.5 text-[0.8rem] font-semibold text-[#334155] shadow-sm">
+                  <i className="fa-solid fa-plus" aria-hidden /> Chọn ảnh
+                </span>
+              </label>
+            ) : null}
+
+            <input
+              type="file"
+              id="driver-photo-upload"
+              accept="image/*"
+              multiple
+              className={isEdit || photoCount > 0 ? 'driver-modal-input mt-2 cursor-pointer' : 'hidden'}
+              data-max-images="5"
+              onChange={onPhotoUpload}
+            />
+
             <input
               type="file"
               id="driver-portrait-slot-file"
@@ -217,55 +398,34 @@ function DriverForm({ driver }: { driver: Loose | null }) {
               aria-hidden="true"
               onChange={onSlotFile}
             />
-            <PortraitGrid
-              portraitLocalBase64={portraitLocalBase64}
-              portraitServerUrls={portraitServerUrls}
-              onAdd={onAddSlot}
-              onRemove={onRemoveSlot}
-            />
-            <span className={hintClass}>
-              Tối đa 5 ảnh. Nhấn <strong>Thêm ảnh</strong> trên ô trống hoặc dùng ô chọn ảnh phía trên.
+
+            <div className={isEdit || photoCount > 0 ? 'mt-3' : 'mt-3'}>
+              <PortraitGrid
+                portraitLocalBase64={portraitLocalBase64}
+                portraitServerUrls={portraitServerUrls}
+                onAdd={onAddSlot}
+                onRemove={onRemoveSlot}
+              />
+            </div>
+
+            <span className="mt-2 block text-[0.75rem] text-[#94a3b8]">
+              {isEdit
+                ? `${photoCount} ảnh tham chiếu đã đăng ký. Nhấn + để thêm ảnh mới`
+                : 'Ảnh dùng cho AI Service nhận diện tài xế khi đăng nhập Box. Có thể bổ sung sau.'}
             </span>
           </div>
-
-          <Field label="Mã Nhân Viên *" icon="fa-id-badge" htmlFor="driver-jobNum">
-            <input type="text" id="driver-jobNum" name="jobNum" className="driver-modal-input" placeholder="Nhập mã nhân viên..." required defaultValue={values.jobNum} />
-          </Field>
-          <Field label="Họ và Tên *" icon="fa-signature" htmlFor="driver-name">
-            <input type="text" id="driver-name" name="name" className="driver-modal-input" placeholder="Nhập họ và tên..." required defaultValue={values.name} />
-          </Field>
-          <Field label="Điện Thoại" icon="fa-phone" htmlFor="driver-contact">
-            <input type="text" id="driver-contact" name="contact" className="driver-modal-input" placeholder="Số điện thoại liên hệ..." defaultValue={values.contact} />
-          </Field>
-          <Field label="Số thẻ quẹt" icon="fa-credit-card" htmlFor="driver-cardNumber">
-            <input type="text" id="driver-cardNumber" name="cardNumber" className="driver-modal-input" placeholder="Mã thẻ RFID..." defaultValue={values.cardNumber} />
-          </Field>
-          <Field label="Giới Tính" icon="fa-venus-mars" htmlFor="driver-sex">
-            <select id="driver-sex" name="sex" className="driver-modal-input" defaultValue={values.sex}>
-              <option value="1">Nam</option>
-              <option value="2">Nữ</option>
-            </select>
-          </Field>
-          <Field label="Ngày Sinh" icon="fa-calendar" htmlFor="driver-birth">
-            <input type="date" id="driver-birth" name="birth" className="driver-modal-input" defaultValue={values.birth} />
-          </Field>
-          <Field label="Số GPLX" icon="fa-id-card" htmlFor="driver-licenseNum">
-            <input type="text" id="driver-licenseNum" name="licenseNum" className="driver-modal-input" placeholder="Số giấy phép lái xe..." defaultValue={values.licenseNum} />
-          </Field>
-          <Field label="Hạng GPLX" icon="fa-car" htmlFor="driver-licenseType">
-            <input type="text" id="driver-licenseType" name="licenseType" className="driver-modal-input" placeholder="VD: B2, C, D, FC..." defaultValue={values.licenseType} />
-          </Field>
         </form>
       </div>
+
       <ModalFooter>
-        <Button id="btn-cancel-driver" variant="outline" size="modal" className="font-semibold" onClick={closeDriverModal}>
-          Hủy bỏ
+        <Button id="btn-cancel-driver" variant="outline" size="modal" className="rounded-xl! font-semibold" onClick={closeDriverModal}>
+          Hủy
         </Button>
         <Button
           id="btn-save-driver"
           variant="primary"
           size="modalWide"
-          className="font-semibold shadow-[0_4px_6px_-1px_rgba(42,157,216,0.2)]"
+          className="rounded-xl! font-semibold"
           disabled={saveMutation.isPending}
           onClick={onSave}
         >
@@ -273,9 +433,13 @@ function DriverForm({ driver }: { driver: Loose | null }) {
             <>
               <i className="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Đang lưu...
             </>
+          ) : isEdit ? (
+            <>
+              <i className="fa-solid fa-check" aria-hidden="true"></i> Lưu thay đổi
+            </>
           ) : (
             <>
-              <i className="fa-solid fa-floppy-disk" aria-hidden="true"></i> Lưu Thay Đổi
+              <i className="fa-solid fa-plus" aria-hidden="true"></i> Tạo tài xế
             </>
           )}
         </Button>
@@ -290,7 +454,7 @@ const ignoreOverlayClick = () => {}
 export function DriverFormModal() {
   const { open, openKey, driver } = useDriverStore((s) => s.driverModal)
   return (
-    <Modal id="driver-modal" open={open} onClose={ignoreOverlayClick} labelledBy="driver-modal-title" maxWidth={650} bordered>
+    <Modal id="driver-modal" open={open} onClose={ignoreOverlayClick} labelledBy="driver-modal-title" maxWidth={720} bordered>
       <DriverForm key={openKey} driver={driver} />
     </Modal>
   )

@@ -3,19 +3,12 @@ import type { ApiResponse, AuthBridge } from './types'
 export type { ApiResponse, AuthBridge } from './types'
 
 export function resolveBaseUrl(loc: { hostname: string; protocol: string }): string {
-  const { hostname, protocol } = loc
-  // Local dev hoặc IP address: trỏ vào backend port 4000
-  const isIP = /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || isIP) {
-    return `${protocol}//${hostname}:4000/api/`
+  // Dev trên localhost: gọi /api cùng origin để Vite proxy sang server.
+  // Cookie CSRF SameSite=Lax không được gửi khi browser gọi thẳng IP khác origin.
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') {
+    return '/api/'
   }
-  // Cấu hình riêng cho geicdashcam.cloud do subdomain 'api' đã bị dùng cho fuan-map
-  if (hostname === 'dashcam.geicdashcam.cloud') {
-    return `${protocol}//apidashcam.geicdashcam.cloud/api/`
-  }
-  // Production: backend chạy ở subdomain api. riêng biệt qua cloudflared tunnel
-  const apiHost = hostname.replace(/^[^.]+\./, 'api.')
-  return `${protocol}//${apiHost}/api/`
+  return 'http://119.17.211.170:4000/api/'
 }
 
 export const BASE_URL: string = resolveBaseUrl(window.location)

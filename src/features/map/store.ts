@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { DeviceStatus } from './lib'
 
 // Trạng thái dùng chung của MapModule (map.js:3-11) mà React cần đọc.
 export type MapState = {
@@ -12,6 +13,13 @@ export type MapState = {
   isInitialized: boolean
   /** Khung "icon-settings" vừa bật/tắt bằng toggleIconSettings đang mở */
   iconSettingsOpen: boolean
+  /** Bản sao lastValidStatuses để sidebar React đọc (poll GPS) */
+  statuses: DeviceStatus[]
+  /** Bộ lọc UI sidebar */
+  listQuery: string
+  listCompany: string
+  listStatus: 'all' | 'online' | 'alert' | 'offline'
+  filtersOpen: boolean
 }
 
 const INITIAL: MapState = {
@@ -20,6 +28,11 @@ const INITIAL: MapState = {
   trackingActive: false,
   isInitialized: false,
   iconSettingsOpen: false,
+  statuses: [],
+  listQuery: '',
+  listCompany: '',
+  listStatus: 'all',
+  filtersOpen: false,
 }
 
 export const useMapStore = create<MapState>(() => ({ ...INITIAL }))

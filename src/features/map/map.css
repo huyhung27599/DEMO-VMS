@@ -5,7 +5,29 @@
   box-shadow: none !important;
 }
 
+.custom-nav-icon img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
 /* Popup marker dùng var(--font-main) (styles2.css:16) */
 :root {
-  --font-main: "Inter", sans-serif;
+  --font-main: "Be Vietnam Pro", "Segoe UI", sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  border: 1px solid #eef2f6;
+  padding: 2px;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+}
+
+.leaflet-popup-tip {
+  box-shadow: none;
 }

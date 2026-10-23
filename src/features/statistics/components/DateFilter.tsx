@@ -21,7 +21,7 @@ export function DateFilter() {
   return (
     <div
       id="stat-date-filter-group"
-      className="flex flex-wrap items-center gap-2 rounded-md bg-[#f1f5f9] p-[3px]"
+      className="flex flex-wrap items-center gap-2 rounded-xl bg-[#f1f5f9] p-1"
     >
       {DATE_BTNS.map((b) => (
         <button

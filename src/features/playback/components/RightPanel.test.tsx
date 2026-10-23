@@ -45,6 +45,7 @@ afterEach(() => {
 describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
   it('nhật ký: tiêu đề, thời gian, chi tiết, link Google Maps, địa điểm; click → active-point', () => {
     usePlaybackStore.setState({
+      rightTab: 'map',
       timeline: { kind: 'entries', entries, places: { 2: 'Địa điểm: Hà Nội' }, active: null },
       timelineCount: '3 sự kiện · 1 đỗ xe',
     })
@@ -73,6 +74,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
 
   it('timeline rỗng sau tìm kiếm / thống kê', () => {
     usePlaybackStore.setState({
+      rightTab: 'map',
       timeline: { kind: 'empty' },
       stats: { distance: '1.00 km', maxspeed: '50 km/h', duration: '--', points: '7' },
     })
@@ -83,6 +85,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
   })
 
   it('nút bản đồ chỉ hoạt động sau init; play đổi icon stop; fullscreen overlay đổi title/icon + class card', async () => {
+    usePlaybackStore.setState({ rightTab: 'map' })
     render(<RightPanel />)
     const play = document.getElementById('pb-track-play-btn') as HTMLButtonElement
     const fs = document.getElementById('pb-map-fullscreen-btn') as HTMLButtonElement
@@ -108,6 +111,7 @@ describe('RightPanel — bản đồ / nhật ký / thống kê', () => {
   })
 
   it('placeholder ẩn và legend hiện sau khi bản đồ có track', () => {
+    usePlaybackStore.setState({ rightTab: 'map' })
     render(<RightPanel />)
     const placeholder = screen.getByText('Bản đồ hành trình sau khi tìm kiếm').parentElement as HTMLElement
     expect(placeholder).toBeVisible()

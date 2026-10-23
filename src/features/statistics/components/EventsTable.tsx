@@ -6,7 +6,7 @@ import { useStatisticsStore } from '../store'
 // .card.stat-table-card (index.html:1220-1270, statistics.css:56-82, styles2.css:762-777)
 
 const CONTROL =
-  'h-8 rounded-sm border border-border px-2 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary'
+  'h-9 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 text-sm outline-none focus:border-[#e11d48]/40 focus:ring-2 focus:ring-[#e11d48]/10'
 
 function EventRow({ e }: { e: AnyRow }) {
   const dateStr = eventDateStr(e)
@@ -21,11 +21,11 @@ function EventRow({ e }: { e: AnyRow }) {
   const spd = formatSpeedDisplay(e)
 
   return (
-    <tr className="stat-events-row" onClick={() => openEventModal(e, dateStr)}>
+    <tr className="stat-events-row cursor-pointer hover:bg-[#fff8f9]" onClick={() => openEventModal(e, dateStr)}>
       <td>{dateStr}</td>
-      <td className="font-medium">{e.vehicleName}</td>
+      <td className="font-bold text-[#0f172a]">{e.vehicleName}</td>
       <td>
-        <span className="rounded-sm bg-black/5 px-2 py-1 text-[0.85rem] font-semibold text-[#333]">{typeName}</span>
+        <span className="rounded-lg bg-[#f1f5f9] px-2 py-1 text-[0.8rem] font-semibold text-[#334155]">{typeName}</span>
       </td>
       <td>
         <strong style={{ color: severityObj ? severityColor : '#64748b' }}>{severity}</strong>
@@ -33,7 +33,6 @@ function EventRow({ e }: { e: AnyRow }) {
       <td>{spd}</td>
       <td>{lat !== '--' ? `${lat}, ${lng}` : '--'}</td>
       <td>
-        {/* Không có handler riêng: click (kể cả Enter/Space khi focus) nổi lên tr như bản gốc */}
         <Button size="sm" className="bg-primary! px-2! py-[0.2rem]! text-white!">
           <i className="fa-solid fa-play" aria-hidden="true"></i> Xem
         </Button>
@@ -48,18 +47,18 @@ export function EventsTable() {
   const search = useStatisticsStore((s) => s.search)
 
   return (
-    <div className="mb-6 flex flex-1 flex-col rounded-md border border-[rgba(226,232,240,0.8)] bg-base p-6 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-md">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[1.1rem] font-semibold">
-          <i className="fa-solid fa-list-ul" aria-hidden="true"></i> Chi tiết sự kiện vi phạm
+    <div className="mb-2 flex flex-1 flex-col overflow-hidden rounded-2xl border border-[#eef2f6] bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef2f6] px-5 py-4">
+        <div className="flex items-center gap-2 text-[1rem] font-bold text-[#0f172a]">
+          <i className="fa-solid fa-brain text-[#e11d48]" aria-hidden="true"></i> Hành vi AI
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <input
             type="text"
             id="stat-table-search"
             aria-label="Tìm biển số xe"
             placeholder="Tìm biển số xe..."
-            className={`${CONTROL} w-50`}
+            className={`${CONTROL} w-44`}
             value={search}
             onChange={(e) => onSearchInput(e.target.value)}
           />
@@ -77,15 +76,15 @@ export function EventsTable() {
             <option value="618">Lái xe mệt mỏi (618)</option>
             <option value="190">Ngáp (190)</option>
           </select>
-          <Button id="stat-export-btn" variant="primary" size="sm" onClick={onExportClick}>
+          <Button id="stat-export-btn" variant="primary" size="sm" className="rounded-xl!" onClick={onExportClick}>
             <i className="fa-solid fa-download" aria-hidden="true"></i> CSV
           </Button>
         </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="stat-events-table">
+      <div className="overflow-x-auto px-1">
+        <table className="stat-events-table w-full border-collapse text-left">
           <thead>
-            <tr>
+            <tr className="[&>th]:border-b [&>th]:border-[#eef2f6] [&>th]:bg-[#f8fafc] [&>th]:px-4 [&>th]:py-3 [&>th]:text-[0.7rem] [&>th]:font-bold [&>th]:tracking-[0.06em] [&>th]:text-[#94a3b8] [&>th]:uppercase">
               <th>Thời gian</th>
               <th>Biển số xe</th>
               <th>Lỗi vi phạm</th>
@@ -98,13 +97,13 @@ export function EventsTable() {
           <tbody id="stat-events-tbody">
             {table === null ? (
               <tr>
-                <td colSpan={7} className="text-center">
+                <td colSpan={7} className="px-4 py-8 text-center text-[#64748b]">
                   <i className="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Đang tải dữ liệu...
                 </td>
               </tr>
             ) : table.items.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center text-text-muted!">
+                <td colSpan={7} className="px-4 py-8 text-center text-text-muted!">
                   Không có dữ liệu phù hợp bộ lọc
                 </td>
               </tr>
@@ -113,13 +112,15 @@ export function EventsTable() {
             )}
           </tbody>
         </table>
-        <div className="mt-4 text-right">
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-[#eef2f6] px-5 py-3">
+        <span className="text-[0.8rem] text-[#64748b]" id="stat-events-page-info">
+          {table === null ? 'Trang 1' : `Trang ${table.page} / ${table.totalPages}`}
+        </span>
+        <div className="flex items-center gap-1.5">
           <Button id="stat-events-prev" size="sm" disabled={table === null ? true : table.prevDisabled} onClick={onPrevClick}>
             Trước
           </Button>
-          <span id="stat-events-page-info" className="mx-2.5 text-[0.9rem]">
-            {table === null ? 'Trang 1' : `Trang ${table.page} / ${table.totalPages}`}
-          </span>
           <Button id="stat-events-next" size="sm" disabled={table === null ? false : table.nextDisabled} onClick={onNextClick}>
             Sau
           </Button>

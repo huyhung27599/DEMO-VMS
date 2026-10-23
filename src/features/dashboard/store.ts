@@ -1,37 +1,67 @@
 import { create } from 'zustand'
-import type { StatusBadge } from './lib'
-
-// Trạng thái hiển thị của dashboard. Bản gốc ghi thẳng vào DOM (setKpi, setProgress,
-// renderVehicleTable, renderAlarmFeed, updateLastUpdated, class 'spinning'); bản mới ghi vào store.
+import type { DashboardPeriod } from './mockData'
 
 export type KpiValue = string | number
 
-export type VehicleRow = { plate: string; badge: StatusBadge }
-export type AlarmFeedItem = { sev: 'critical' | 'warning' | 'info'; title: string; time: string }
+export type AlertLevel = 'high' | 'medium' | 'low'
+
+export type AlarmTypeBar = { name: string; count: number; color: string }
+
+export type TopAlertVehicle = {
+  rank: number
+  plate: string
+  driver: string
+  count: number
+}
+
+export type LatestAlertRow = {
+  id: string
+  time: string
+  plate: string
+  driver: string
+  type: string
+  level: AlertLevel
+}
+
+export type DashboardKpi = {
+  totalVehicles: KpiValue
+  onlineVehicles: KpiValue
+  alarmsToday: KpiValue
+  /** so với hôm qua (mock delta khi chưa có API lịch sử) */
+  alarmsDelta: number
+  activeDrivers: KpiValue
+  totalDrivers: KpiValue
+  devicesOnline: KpiValue
+  devicesTotal: KpiValue
+  devicesLost: KpiValue
+}
 
 export type DashboardState = {
-  kpi: { total: KpiValue; online: KpiValue; offline: KpiValue; moving: KpiValue; alarms: KpiValue; mileage: KpiValue }
-  onlinePct: KpiValue
-  offlinePct: KpiValue
-  bars: { online: number; offline: number; moving: number; mileage: number }
-  /** null = hàng "Đang tải dữ liệu..." ban đầu */
-  tableRows: VehicleRow[] | null
-  tableCount: string
-  searchText: string
-  alarmItems: AlarmFeedItem[]
+  kpi: DashboardKpi
+  period: DashboardPeriod
+  alarmTypeBars: AlarmTypeBar[]
+  topVehicles: TopAlertVehicle[]
+  latestAlerts: LatestAlertRow[]
   lastUpdated: string
   refreshing: boolean
 }
 
 export const initialDashboardState: DashboardState = {
-  kpi: { total: '--', online: '--', offline: '--', moving: '--', alarms: '--', mileage: '--' },
-  onlinePct: '--',
-  offlinePct: '--',
-  bars: { online: 0, offline: 0, moving: 0, mileage: 0 },
-  tableRows: null,
-  tableCount: '0 phương tiện',
-  searchText: '',
-  alarmItems: [],
+  kpi: {
+    totalVehicles: '--',
+    onlineVehicles: '--',
+    alarmsToday: '--',
+    alarmsDelta: 0,
+    activeDrivers: '--',
+    totalDrivers: '--',
+    devicesOnline: '--',
+    devicesTotal: '--',
+    devicesLost: '--',
+  },
+  period: 'today',
+  alarmTypeBars: [],
+  topVehicles: [],
+  latestAlerts: [],
   lastUpdated: 'Đang tải dữ liệu...',
   refreshing: false,
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { AnyRow } from './lib'
+import type { ReportTypeId } from './mockData'
 
 // Biến module của EventsModule (events.js:2-11) + ảnh chụp những gì các hàm render gốc đã ghi vào DOM
 // (updateKPIs, updateLeaderboard, renderTable, #stat-last-update). Các ảnh chụp chỉ đổi khi hàm gốc
@@ -51,6 +52,10 @@ type StatisticsState = {
   leaderboard: LeaderboardSnapshot | null
   table: TableSnapshot | null
   modal: EventModalState
+  /** Loại báo cáo đang chọn trên UI mockup */
+  reportType: ReportTypeId
+  reportEnterprise: string
+  reportVehicle: string
 }
 
 const initialState = (): StatisticsState => ({
@@ -80,6 +85,9 @@ const initialState = (): StatisticsState => ({
   leaderboard: null,
   table: null,
   modal: null,
+  reportType: 'trips',
+  reportEnterprise: '',
+  reportVehicle: '',
 })
 
 export const useStatisticsStore = create<StatisticsState>(initialState)

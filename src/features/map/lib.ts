@@ -77,7 +77,8 @@ export function getTrackingIconSvg(type: string, color: string, isOnline: boolea
   }
 
   if (pngMap[type]) {
-    return `<img src="img/markers/${pngMap[type]}" width="38" height="38" style="${shadow} ${filter}; object-fit: contain;" />`
+    const size = type === 'navigation' ? 20 : 38
+    return `<img src="img/markers/${pngMap[type]}" width="${size}" height="${size}" style="width:${size}px;height:${size}px;${shadow} ${filter}; object-fit: contain;" />`
   }
 
   // Fallback SVG (cho trường hợp không tìm thấy PNG hoặc type lạ)

@@ -129,7 +129,7 @@ function AiEventCard({ ev, idx, thumb }: { ev: Loose; idx: number; thumb: AiThum
 
   return (
     <li
-      className="ai-event-card flex min-h-[140px] cursor-pointer overflow-hidden rounded-lg border border-solid border-border bg-base shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-[transform,box-shadow] duration-200 ease-[ease] hover:-translate-y-[2px] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] min-[1025px]:max-[1919px]:min-h-[129px]"
+      className="ai-event-card flex min-h-[140px] cursor-pointer overflow-hidden rounded-lg border border-solid border-border bg-surface shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)] transition-[transform,box-shadow] duration-200 ease-[ease] hover:-translate-y-[2px] hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.1)] min-[1025px]:max-[1919px]:min-h-[129px]"
       onClick={() => openAiEventModal(idx)}
     >
       {/* Cột thông tin (Bên trái) */}
@@ -212,7 +212,7 @@ export function AiEventsPanel() {
   const list = useAiEventsStore((s) => s.list)
 
   return (
-    <div className="ai-events-panel flex h-full flex-1 flex-col overflow-hidden bg-base">
+    <div className="ai-events-panel flex h-full flex-1 flex-col overflow-hidden bg-surface">
       <div className="ai-events-filter flex gap-2 border-b border-solid border-border p-3">
         <input
           type="text"

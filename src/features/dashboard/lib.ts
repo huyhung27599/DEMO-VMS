@@ -34,7 +34,32 @@ export function formatTime(isoOrTimestamp: unknown): string {
 }
 
 export function lastUpdatedText(now: Date = new Date()): string {
-  return `Cập nhật lúc: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  return `Tổng quan vận hành đội xe - Cập nhật lúc ${pad(now.getHours())}:${pad(now.getMinutes())}`
+}
+
+export function formatClock(isoOrTimestamp: unknown): string {
+  try {
+    const d =
+      typeof isoOrTimestamp === 'number'
+        ? new Date(isoOrTimestamp * 1000)
+        : new Date(isoOrTimestamp as string)
+    if (Number.isNaN(d.getTime())) return '--'
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  } catch {
+    return '--'
+  }
+}
+
+export function alertLevelFromSeverity(sev: 'critical' | 'warning' | 'info'): 'high' | 'medium' | 'low' {
+  if (sev === 'critical') return 'high'
+  if (sev === 'warning') return 'high'
+  return 'medium'
+}
+
+export function alertLevelLabel(level: 'high' | 'medium' | 'low'): string {
+  if (level === 'high') return 'Cao'
+  if (level === 'medium') return 'Trung bình'
+  return 'Thấp'
 }
 
 export type StatusBadge = { kind: 'offline' | 'moving' | 'parked'; label: string }

@@ -157,7 +157,7 @@ Dạng `file gốc:hàm → file mới:hàm`. Các đường dẫn gốc nằm t
 - `liveview.js:renderDriverInfo/findDriverInList/getLatestIdentifyEvent` → `driverInfo.ts:<cùng tên>` (DOM: `components/DriverInfoCard.tsx`, gắn vào `[data-driver-content]` của `UnifiedPlayer.tsx`)
 - `liveview.js:startDrivingDurationTicker/stopDrivingDurationTicker` → `driverInfo.ts:<cùng tên>` + `tickDrivingDuration` + hook `useDrivingDuration(deviceId, token)` (setInterval 1 000 ms trong effect)
 - biến `_faceCheckPolls/_drivingDurationTimers/_drivingSessions/_lastDriverIsStranger` + phần cuối `stopKeepalive` → `driverInfo.ts` (`useDriverInfoStore.faceCheckPolls/runningPolls/drivingDurationTimers`, biến module `drivingSessions/lastDriverIsStranger`) + `stopDriverInfoTimers`
-- `styles2.css:1334-1527` + `responsive-desktop.css:158-160` (.ai-events-*, .ai-event-card, .ai-card-*) → Tailwind trong `components/AiEventsPanel.tsx`
+- `styles2.css:1334-1527` + `responsive-desktop.css:158-160` (.ai-events-_, .ai-event-card, .ai-card-_) → Tailwind trong `components/AiEventsPanel.tsx`
 
 ### 2.10 Playback: tìm kiếm, trình phát, panel phải (Task 12)
 
@@ -268,7 +268,7 @@ Mọi mục dưới đây là hành vi CỦA BẢN GỐC được giữ lại c�
 - `#face-sync-btn`: sau lần đồng bộ đầu chữ đổi thành "Đồng bộ ảnh tài xế" (khác chữ ban đầu "Đồng bộ & Cập nhật AI"). Không try/catch: API reject thì nút kẹt ở "Đang đồng bộ...". Giữ nguyên.
 - Sự kiện khuôn mặt chỉ nạp khi bấm "Tìm kiếm" (không nạp khi đổi tab). `fetchQuery` gộp hai lần bấm trùng khoảng thời gian khi lần đầu chưa xong (bản gốc chạy hai lần); tương tự `faceHealthQueryOptions` gộp lời gọi health đồng thời.
 - `classifyFaceEvent` với nguồn localDb đọc `evt.match`, nhưng `mapLocalFaceLogToEvent` chỉ gán `faceMatch` → nhánh match/mismatch của localDb không bao giờ chạy (luôn "❓ Không xác định" hoặc "✅ Khớp tài xế" theo tên). `badge/badgeClass`, `srcLabel`, `localCount/upstreamCount/totalRecognitionCount` được tính nhưng không hiển thị. Giữ nguyên.
-- URL ảnh nhật ký cục bộ: `${BASE_URL}face/capture/…`; khi BASE_URL là đường dẫn tương đối, `firstPathFromField` ghép thành `https://fleetscontrol.com/api/face/capture/…` (hành vi gốc).
+- URL ảnh nhật ký cục bộ: `${BASE_URL}face/capture/…`; khi BASE_URL là đường dẫn tương đối, `firstPathFromField` ghép thành `http://119.17.211.170:8080/api/face/capture/…` (hành vi gốc).
 - R13: tên tài xế / SĐT / mã NV trong thẻ, `dn` trong sự kiện… bản gốc chèn bằng innerHTML (một số không escape), bản port render qua JSX (escape). `escapeHtml` trong `src`/`data-image` của bản gốc chỉ là escape thuộc tính (trình duyệt giải mã lại) nên JSX dùng URL thô là tương đương.
 - `pushFaceAlert` không được gọi ở đâu trong bản gốc (code chết). Bản port giữ phần tạo alert + `window.dispatchEvent('ai-face-alert')`; phần chèn trực tiếp `<li>` vào `#ai-alert-list` và tăng `#ai-badge` của liveview không port vì `#ai-alert-list` và `#ai-badge` không có trong index.html (nhất quán với mục liveview 3.7/3.8: các phần tử này vắng nên `pollAiAlerts` thoát sớm); nếu cần thì lắng nghe event.
 - Flatpickr khởi tạo trong effect của tab sự kiện (mount lúc tải trang, như DOMContentLoaded); `now`/`startDay` tính lúc đó. `DatePickerController.toApiDateTime` dùng instance Flatpickr, fallback như bản gốc khi không có instance.
@@ -304,7 +304,6 @@ Mọi mục dưới đây là hành vi CỦA BẢN GỐC được giữ lại c�
 - Tên xe (`sanitizeHTML(nm)` chèn qua innerHTML) và tên/ID thiết bị hiển thị qua JSX — cùng chuỗi hiển thị (R13).
 - `useLiveviewStore.leftTab` có thêm giá trị `null` (trước `initTabs`, chưa panel nào `active`; nút Camera vẫn active theo index.html). Brief ghi `selectedDeviceIds`: thay bằng selector `selectSelectedDeviceIds` suy ra từ `grid` (dùng với `useShallow`).
 - `.video-tile` là `div` có `onClick` (không focus được bằng bàn phím) như bản gốc; tile chứa iframe nên không đổi thành `<button>`.
-
 
 ### 3.8 Liveview: AI
 
@@ -375,38 +374,38 @@ Mọi mục dưới đây là hành vi CỦA BẢN GỐC được giữ lại c�
 
 Bảng tóm tắt; chi tiết nằm ở mục 3 (cùng tính năng) hoặc ghi trong bảng này.
 
-| Ruling | Nội dung | Ảnh hưởng |
-|---|---|---|
-| R1 | Giao diện theo bản gốc ("giao diện tương đương"), không đổi theme; chỉ bảo đảm focus bàn phím, responsive, a11y | Nếu sai: phải restyle sau |
-| R2 | `authActions.showApp/showLogin` chỉ đổi store; `RootLayout` thực hiện navigate / refetch dashboard / `playbackInit` | Không đổi hành vi |
-| R3 | Task 4 tạo sẵn `AiToastStack.tsx` trả `null`, Task 15 thay bằng bản thật (nội bộ, không ảnh hưởng hành vi) | Không |
-| R4 | `playbackInit()` gọi mỗi lần showApp và một lần ở lần đăng nhập đầu, có guard; không gọi lúc tải app | Giống nguồn |
-| R5 | Không code-splitting/lazy import (ngoại lệ: devtools chỉ ở DEV trong main.tsx, không vào bundle production) | Bundle đầu lớn hơn |
-| R6 | Áp dụng best practice React khi không đổi hành vi (không định nghĩa component lồng, ternary thay `&&`, listener passive, state suy ra khi render, guard init-once, functional setState); KHÔNG cache đọc storage vì sẽ đổi ngữ nghĩa hết hạn token | Không đổi hành vi |
-| R7 | `client.ts` không export `getSecurityContext` nên `X-CSRF-Token` của auth luôn `""` | Giữ bug gốc |
-| R8 | `fetchApi` có thể reject khi lấy CSRF lỗi; consumer không nuốt lỗi | Giống gốc |
-| R9 | Redirect của TanStack Router luôn `replace`: khi đã đăng nhập, hash rỗng/không hợp lệ/`#/dashboard`/`#login` được thay bằng `#dashboard` (gốc: gán `location.hash`, thêm một entry history); hash không hợp lệ khi đang dùng app đổi URL thành `#dashboard` | Lịch sử trình duyệt khác chút |
-| R10 | `shared/ui/toastStore` = `AppHelpers.showToast`; toast AI của event-server dùng `useAiToastStore/showAiToast` | Tên khác |
-| R11 | Click nav playback gọi `handleResize` sau 220 ms thuộc Task 12, không phải thiếu sót của Task 4 (nội bộ, không ảnh hưởng hành vi) | Không |
-| R12 | `RootLayout` khi showApp chỉ `refetchQueries(['dashboard','refresh'])` (gốc: `loadDashboardData` chỉ gọi `DashboardModule.refresh`); không kích lại realtime alarms lúc đăng nhập | Giống gốc |
-| R13 (mở rộng) | Popup/divIcon Leaflet vẫn là chuỗi HTML nhưng `uid`, thời gian, `sn`, hướng quay, màu icon (localStorage) được escape (`sanitizeHTML`/`attrEscape`) | Chặn XSS qua dữ liệu API/localStorage, không đổi hiển thị với dữ liệu hợp lệ |
-| R13 | Chuỗi bản gốc chèn bằng `innerHTML` (có/không escape) nay render qua JSX nên luôn được escape; popup Leaflet vẫn là chuỗi HTML | Loại XSS tiềm ẩn, hiển thị giống nhau với dữ liệu thường |
-| R14 | Dashboard `refresh()` chạy hai lần ở lần đăng nhập đầu như gốc | Giống gốc |
-| R15 | Mutation vehicle gọi `refresh(client)` tuần tự (vehicles rồi companies) thay vì `refetchQueries(['vehicle'])` | Giữ thứ tự/derive |
-| R16 | Xóa tài xế theo nguồn (lọc state + ghi `drivers_cache`, không refetch) thay vì chữ trong plan | Giống nguồn |
-| R17 | Danh sách tài xế nạp bằng `loadDrivers()` (cache rồi `fetchQuery`), không có `useQuery` tự fetch lúc mount | Giống gốc |
-| R18 | Ban đầu là đề xuất tạm (gộp ba trigger vào `onSectionShown('driver')` lúc 150 ms), sau đó bị bác theo kiểm tra số lần gọi API; bản cuối: giữ đủ ba đường kích hoạt nạp tài xế: observer, click nav (+50 ms), kiểm tra một lần (+200 ms); thêm hook `onNavItemClick` | Giống gốc |
-| R19 | Map: tracking dừng sau đăng xuất và không chạy lại tới khi tải lại trang (guard `isInitialized` + `stopTracking` khi mất token) | Marker đứng yên như gốc |
-| R20 | `refetchInterval` của TanStack không chạy chồng một lần fetch đang dở (setInterval gốc có thể chồng khi API > 1,5 s) | Ít request hơn khi API chậm |
-| R21 | GeoJSON map dùng đường dẫn tuyệt đối theo map.js; `focusOnLocation` là hàm rỗng (gốc không có) | Không |
-| R22 | `playHlsStream` giữ chữ ký gốc `(deviceId, channel, videoId, vehicleName)` (code chết) | Không |
-| R23 | `selectedDeviceIds` là selector; `leftTab` có thể `null` trước init | Chi tiết store |
-| R24 | Modal sự kiện AI của liveview gần như vô hình vì gốc không có CSS `.ai-modal-*` | Ứng viên refactor sau, báo người dùng |
-| R25 | Race ghi đè interval 10 s của `_faceCheckPolls` (liveview.js:1653-1658) KHÔNG tái hiện; poll/ticker gắn theo `token` của từng wall | Thẻ tài xế không bị đứng yên như gốc trong tình huống đó (mô tả bên dưới) |
-| R26 | Playback resize ở +220 ms (click nav) và +450/+950 ms (main.js lồng 300/800 trong timer 150 ms) | Giống gốc, có test tích hợp |
-| R27 | Geocode đồng thời cùng key được gộp bởi `fetchQuery` (gốc gọi hai lần) | Ít hơn một request ở trường hợp chồng lấn hiếm |
-| R28 | Thống kê: `loadStatistics` gọi trực tiếp (không query); query modal bằng chứng chỉ bật khi modal mở (không còn A ghi đè B) | Khác biệt nhỏ ở race hiếm |
-| R29 | `loaderStore`/`GlobalLoader` thay `AppHelpers.showLoader/hideLoader`; riêng liveview bỏ vì loader không bao giờ kịp hiển thị | Giống gốc |
+| Ruling        | Nội dung                                                                                                                                                                                                                                                            | Ảnh hưởng                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| R1            | Giao diện theo bản gốc ("giao diện tương đương"), không đổi theme; chỉ bảo đảm focus bàn phím, responsive, a11y                                                                                                                                                     | Nếu sai: phải restyle sau                                                    |
+| R2            | `authActions.showApp/showLogin` chỉ đổi store; `RootLayout` thực hiện navigate / refetch dashboard / `playbackInit`                                                                                                                                                 | Không đổi hành vi                                                            |
+| R3            | Task 4 tạo sẵn `AiToastStack.tsx` trả `null`, Task 15 thay bằng bản thật (nội bộ, không ảnh hưởng hành vi)                                                                                                                                                          | Không                                                                        |
+| R4            | `playbackInit()` gọi mỗi lần showApp và một lần ở lần đăng nhập đầu, có guard; không gọi lúc tải app                                                                                                                                                                | Giống nguồn                                                                  |
+| R5            | Không code-splitting/lazy import (ngoại lệ: devtools chỉ ở DEV trong main.tsx, không vào bundle production)                                                                                                                                                         | Bundle đầu lớn hơn                                                           |
+| R6            | Áp dụng best practice React khi không đổi hành vi (không định nghĩa component lồng, ternary thay `&&`, listener passive, state suy ra khi render, guard init-once, functional setState); KHÔNG cache đọc storage vì sẽ đổi ngữ nghĩa hết hạn token                  | Không đổi hành vi                                                            |
+| R7            | `client.ts` không export `getSecurityContext` nên `X-CSRF-Token` của auth luôn `""`                                                                                                                                                                                 | Giữ bug gốc                                                                  |
+| R8            | `fetchApi` có thể reject khi lấy CSRF lỗi; consumer không nuốt lỗi                                                                                                                                                                                                  | Giống gốc                                                                    |
+| R9            | Redirect của TanStack Router luôn `replace`: khi đã đăng nhập, hash rỗng/không hợp lệ/`#/dashboard`/`#login` được thay bằng `#dashboard` (gốc: gán `location.hash`, thêm một entry history); hash không hợp lệ khi đang dùng app đổi URL thành `#dashboard`         | Lịch sử trình duyệt khác chút                                                |
+| R10           | `shared/ui/toastStore` = `AppHelpers.showToast`; toast AI của event-server dùng `useAiToastStore/showAiToast`                                                                                                                                                       | Tên khác                                                                     |
+| R11           | Click nav playback gọi `handleResize` sau 220 ms thuộc Task 12, không phải thiếu sót của Task 4 (nội bộ, không ảnh hưởng hành vi)                                                                                                                                   | Không                                                                        |
+| R12           | `RootLayout` khi showApp chỉ `refetchQueries(['dashboard','refresh'])` (gốc: `loadDashboardData` chỉ gọi `DashboardModule.refresh`); không kích lại realtime alarms lúc đăng nhập                                                                                   | Giống gốc                                                                    |
+| R13 (mở rộng) | Popup/divIcon Leaflet vẫn là chuỗi HTML nhưng `uid`, thời gian, `sn`, hướng quay, màu icon (localStorage) được escape (`sanitizeHTML`/`attrEscape`)                                                                                                                 | Chặn XSS qua dữ liệu API/localStorage, không đổi hiển thị với dữ liệu hợp lệ |
+| R13           | Chuỗi bản gốc chèn bằng `innerHTML` (có/không escape) nay render qua JSX nên luôn được escape; popup Leaflet vẫn là chuỗi HTML                                                                                                                                      | Loại XSS tiềm ẩn, hiển thị giống nhau với dữ liệu thường                     |
+| R14           | Dashboard `refresh()` chạy hai lần ở lần đăng nhập đầu như gốc                                                                                                                                                                                                      | Giống gốc                                                                    |
+| R15           | Mutation vehicle gọi `refresh(client)` tuần tự (vehicles rồi companies) thay vì `refetchQueries(['vehicle'])`                                                                                                                                                       | Giữ thứ tự/derive                                                            |
+| R16           | Xóa tài xế theo nguồn (lọc state + ghi `drivers_cache`, không refetch) thay vì chữ trong plan                                                                                                                                                                       | Giống nguồn                                                                  |
+| R17           | Danh sách tài xế nạp bằng `loadDrivers()` (cache rồi `fetchQuery`), không có `useQuery` tự fetch lúc mount                                                                                                                                                          | Giống gốc                                                                    |
+| R18           | Ban đầu là đề xuất tạm (gộp ba trigger vào `onSectionShown('driver')` lúc 150 ms), sau đó bị bác theo kiểm tra số lần gọi API; bản cuối: giữ đủ ba đường kích hoạt nạp tài xế: observer, click nav (+50 ms), kiểm tra một lần (+200 ms); thêm hook `onNavItemClick` | Giống gốc                                                                    |
+| R19           | Map: tracking dừng sau đăng xuất và không chạy lại tới khi tải lại trang (guard `isInitialized` + `stopTracking` khi mất token)                                                                                                                                     | Marker đứng yên như gốc                                                      |
+| R20           | `refetchInterval` của TanStack không chạy chồng một lần fetch đang dở (setInterval gốc có thể chồng khi API > 1,5 s)                                                                                                                                                | Ít request hơn khi API chậm                                                  |
+| R21           | GeoJSON map dùng đường dẫn tuyệt đối theo map.js; `focusOnLocation` là hàm rỗng (gốc không có)                                                                                                                                                                      | Không                                                                        |
+| R22           | `playHlsStream` giữ chữ ký gốc `(deviceId, channel, videoId, vehicleName)` (code chết)                                                                                                                                                                              | Không                                                                        |
+| R23           | `selectedDeviceIds` là selector; `leftTab` có thể `null` trước init                                                                                                                                                                                                 | Chi tiết store                                                               |
+| R24           | Modal sự kiện AI của liveview gần như vô hình vì gốc không có CSS `.ai-modal-*`                                                                                                                                                                                     | Ứng viên refactor sau, báo người dùng                                        |
+| R25           | Race ghi đè interval 10 s của `_faceCheckPolls` (liveview.js:1653-1658) KHÔNG tái hiện; poll/ticker gắn theo `token` của từng wall                                                                                                                                  | Thẻ tài xế không bị đứng yên như gốc trong tình huống đó (mô tả bên dưới)    |
+| R26           | Playback resize ở +220 ms (click nav) và +450/+950 ms (main.js lồng 300/800 trong timer 150 ms)                                                                                                                                                                     | Giống gốc, có test tích hợp                                                  |
+| R27           | Geocode đồng thời cùng key được gộp bởi `fetchQuery` (gốc gọi hai lần)                                                                                                                                                                                              | Ít hơn một request ở trường hợp chồng lấn hiếm                               |
+| R28           | Thống kê: `loadStatistics` gọi trực tiếp (không query); query modal bằng chứng chỉ bật khi modal mở (không còn A ghi đè B)                                                                                                                                          | Khác biệt nhỏ ở race hiếm                                                    |
+| R29           | `loaderStore`/`GlobalLoader` thay `AppHelpers.showLoader/hideLoader`; riêng liveview bỏ vì loader không bao giờ kịp hiển thị                                                                                                                                        | Giống gốc                                                                    |
 
 Chi tiết R25 (race không tái hiện):
 
@@ -426,18 +425,18 @@ Khác biệt do TanStack Router / a11y / cấu hình query (ghi nhận):
 
 Đối chiếu chạy thật: KHÔNG thực hiện được. Backend (`backend/`) cần `.env` và PostgreSQL/Prisma, và proxy mọi lời gọi lên máy chủ thật `fleetscontrol.com`; chạy nó đồng nghĩa với phải dựng DB / chạm hệ thống production, nằm ngoài phạm vi frontend-reactjs nên không thử. Vì vậy MỌI màn được xác nhận bằng đối chiếu theo code (so từng hàm gốc với bản port, bảng ánh xạ mục 2) cộng với test tự động (`pnpm test`: 41 file, 743 test; `pnpm lint`; `pnpm build`) và `node scripts/check-parity.mjs` (0 missing). Nên chạy đối chiếu song song bản gốc (cổng 3000) và bản build (4173) khi có môi trường backend an toàn.
 
-| Màn | Route | Đối chiếu chạy thật | Đối chiếu theo code + test |
-|---|---|---|---|
-| Đăng nhập, khung, đổi mật khẩu, đăng xuất | `#login` / khung | Chưa | Có |
-| Dashboard | `#dashboard` | Chưa | Có |
-| Giám sát trực tiếp (liveview, AI) | `#liveview` | Chưa | Có |
-| Bản đồ | `#map` | Chưa | Có |
-| Xem lại (playback, hành trình GPS) | `#playback` | Chưa | Có |
-| Thống kê | `#statistics` | Chưa | Có |
-| Tài xế | `#driver` | Chưa | Có |
-| Phương tiện | `#vehicle` | Chưa | Có |
-| Cài đặt | `#settings` | Chưa | Có |
-| Event-server (toast AI nền, section rỗng) | `#event-server` | Chưa | Có |
+| Màn                                       | Route            | Đối chiếu chạy thật | Đối chiếu theo code + test |
+| ----------------------------------------- | ---------------- | ------------------- | -------------------------- |
+| Đăng nhập, khung, đổi mật khẩu, đăng xuất | `#login` / khung | Chưa                | Có                         |
+| Dashboard                                 | `#dashboard`     | Chưa                | Có                         |
+| Giám sát trực tiếp (liveview, AI)         | `#liveview`      | Chưa                | Có                         |
+| Bản đồ                                    | `#map`           | Chưa                | Có                         |
+| Xem lại (playback, hành trình GPS)        | `#playback`      | Chưa                | Có                         |
+| Thống kê                                  | `#statistics`    | Chưa                | Có                         |
+| Tài xế                                    | `#driver`        | Chưa                | Có                         |
+| Phương tiện                               | `#vehicle`       | Chưa                | Có                         |
+| Cài đặt                                   | `#settings`      | Chưa                | Có                         |
+| Event-server (toast AI nền, section rỗng) | `#event-server`  | Chưa                | Có                         |
 
 ## 6. Công cụ đối chiếu và kiểu dữ liệu
 

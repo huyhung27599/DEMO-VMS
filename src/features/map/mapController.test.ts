@@ -72,8 +72,11 @@ describe('init (map.js:100-151)', () => {
       expect(m.handlers.get('dragstart')).toHaveLength(1)
       expect(addTerritorialOverlays).toHaveBeenCalledWith(m)
     }
+    // mỗi bản đồ: CartoDB nền + tile GEIC
     expect(created.tileLayers.map((t) => t.url)).toEqual([
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       'https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png',
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       'https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png',
     ])
     expect(useMapStore.getState().trackingActive).toBe(true)
@@ -123,7 +126,7 @@ describe('updateMapMarkers (map.js:405-578)', () => {
     expect(html).toContain('Trực tuyến')
     expect(html).toContain('id="icon-settings-DEV1"')
     expect(L.divIcon).toHaveBeenLastCalledWith(
-      expect.objectContaining({ className: 'custom-nav-icon', iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18] }),
+      expect.objectContaining({ className: 'custom-nav-icon', iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10] }),
     )
     // follow mặc định bật: xe đầu tiên là mục tiêu -> setView không animate
     expect(main.setView).toHaveBeenLastCalledWith([16.2, 106.5], main.getZoom(), { animate: false })
@@ -300,7 +303,7 @@ describe('focusOnVehicle / center / resize / icon settings', () => {
     ;(document.getElementById('icon-type-DEV1') as HTMLSelectElement).value = 'car'
     ;(document.getElementById('icon-color-DEV1') as HTMLInputElement).value = '#123456'
     vi.mocked(L.divIcon).mockClear()
-    popupEl.querySelector<HTMLButtonElement>('button')!.click()
+    popupEl.querySelector<HTMLButtonElement>('[data-map-action="save-icon"]')!.click()
     expect(JSON.parse(localStorage.getItem('geic_vehicle_icons')!)).toEqual({ DEV1: { type: 'car', color: '#123456' } })
     // vẽ lại ngay cho cả hai bản đồ
     expect(L.divIcon).toHaveBeenCalledTimes(1)

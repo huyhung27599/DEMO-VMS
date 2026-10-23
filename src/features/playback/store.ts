@@ -80,6 +80,8 @@ export type PlaybackState = {
   endTime: string
   /** giá trị #pb-vehicle-select ('' hoặc chỉ số trong vehiclesCache) */
   vehicleValue: string
+  /** Bộ lọc camera UI: '0' = tất cả → phát kênh 1; '1'..'4' = kênh cụ thể */
+  cameraFilter: string
   vehiclesCache: Loose[]
   currentDevice: string | null
   currentVehicleName: string
@@ -128,6 +130,7 @@ const INITIAL: PlaybackState = {
   beginTime: '',
   endTime: '',
   vehicleValue: '',
+  cameraFilter: '0',
   vehiclesCache: [],
   currentDevice: null,
   currentVehicleName: '',

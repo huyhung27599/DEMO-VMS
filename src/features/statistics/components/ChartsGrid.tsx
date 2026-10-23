@@ -23,7 +23,7 @@ function StatChartCard({
 }) {
   return (
     <div
-      className={`flex min-w-0 flex-col rounded-md border border-border bg-base px-5 py-4 shadow-sm transition-shadow duration-250 hover:shadow-md ${
+      className={`flex min-w-0 flex-col rounded-md border border-border bg-surface px-5 py-4 shadow-sm transition-shadow duration-250 hover:shadow-md ${
         span2 ? 'col-span-2' : ''
       } ${className}`}
     >

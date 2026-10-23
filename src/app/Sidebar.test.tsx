@@ -52,8 +52,8 @@ describe('Sidebar mock IA', () => {
 
 describe('PlaceholderSection', () => {
   it('hiển thị title + badge Đang phát triển', async () => {
-    renderWithProviders(<PlaceholderSection routeId="enterprises" hidden={false} />)
-    expect(await screen.findByRole('heading', { name: PLACEHOLDER_PAGES.enterprises!.title })).toBeInTheDocument()
+    renderWithProviders(<PlaceholderSection routeId="audit" hidden={false} />)
+    expect(await screen.findByRole('heading', { name: PLACEHOLDER_PAGES.audit!.title })).toBeInTheDocument()
     expect(screen.getByText('Đang phát triển')).toBeInTheDocument()
   })
 })

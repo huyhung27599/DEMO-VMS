@@ -1,7 +1,6 @@
-/* styles2.css:2384-2408, 2533-2541 — hiệu ứng pulse-ring dùng chung cho kpi-pulse-dot và live-dot */
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55);
   }
   70% {
     box-shadow: 0 0 0 8px rgba(255, 255, 255, 0);
@@ -15,29 +14,27 @@
   animation: pulse-ring 1.5s ease-out infinite;
 }
 
-.dashboard-pulse-live {
-  animation: pulse-ring 1.2s ease-out infinite;
-}
-
-/* .kpi-card::before / ::after: hai vòng tròn trang trí */
+/* Soft glow circles on filled KPI cards (navy / red) */
 .dashboard-kpi-card::before {
   content: '';
   position: absolute;
-  top: -30px;
-  right: -20px;
-  width: 100px;
-  height: 100px;
+  top: -36%;
+  right: -8%;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 68%);
+  pointer-events: none;
 }
 
 .dashboard-kpi-card::after {
   content: '';
   position: absolute;
-  top: 10px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
+  bottom: -40%;
+  left: -10%;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08), transparent 70%);
+  pointer-events: none;
 }

@@ -10,9 +10,9 @@ const get = usePlaybackStore.getState
 
 /** playback.js:496-556 — đọc giá trị form từ store (thay cho document.getElementById(...).value). */
 export async function onSearch(): Promise<void> {
-  const { vehicleValue: vehicleIdx, beginTime, endTime } = get()
-  // UI đã bỏ chọn kênh/chất lượng → mặc định kênh 1 (API CMSV6 / fleetscontrol thường không chấp nhận channel=0 cho getPlaybackVideoH5)
-  const channelVal = '1'
+  const { vehicleValue: vehicleIdx, beginTime, endTime, cameraFilter } = get()
+  // '0' (Tất cả) → kênh 1: API CMSV6 / fleetscontrol thường không chấp nhận channel=0 cho getPlaybackVideoH5
+  const channelVal = !cameraFilter || cameraFilter === '0' ? '1' : cameraFilter
   const streamType = '1' // sub stream (thường) - phù hợp trình duyệt hơn
 
   if (!vehicleIdx) {

@@ -1,6 +1,6 @@
 import L from 'leaflet'
 import { addTerritorialOverlays } from '../../shared/map/territorial'
-import { CUSTOM_ATTR, CUSTOM_TILE_URL, FALLBACK_ATTR, FALLBACK_TILE_URL } from '../../shared/map/tiles'
+import { addTileLayerWithFallback } from '../../shared/map/tiles'
 import { showToast } from '../../shared/ui/toastStore'
 import {
   formatTrackTime,
@@ -254,33 +254,6 @@ export async function renderTrackOnMap(points: TrackPoint[], parkStops: ParkStop
       if (map) map.invalidateSize()
     }, delay)
   })
-}
-
-// ── Tile Layer with auto-fallback ─────────────────────────────────────────
-// playback.js:1585-1608 — giống map.js nhưng log '[Playback]' nên port riêng (URL dùng chung shared/map/tiles).
-
-/** playback.js:1591-1608 `_addTileLayerWithFallback` */
-export function addTileLayerWithFallback(mapObj: L.Map): void {
-  let errorCount = 0
-  const customLayer = L.tileLayer(CUSTOM_TILE_URL, {
-    minZoom: 6,
-    maxZoom: 19,
-    attribution: CUSTOM_ATTR,
-  })
-  customLayer.on('tileerror', () => {
-    errorCount++
-    if (errorCount >= 3) {
-      console.warn('[Playback] Custom tile server lỗi, chuyển sang CartoDB Voyager')
-      mapObj.removeLayer(customLayer)
-      L.tileLayer(FALLBACK_TILE_URL, {
-        minZoom: 6,
-        maxZoom: 19,
-        attribution: FALLBACK_ATTR,
-        subdomains: 'abcd',
-      }).addTo(mapObj)
-    }
-  })
-  customLayer.addTo(mapObj)
 }
 
 /** playback.js:1610-1632 — tạo bản đồ lần đầu cần dùng (renderTrackOnMap / click nhật ký). */

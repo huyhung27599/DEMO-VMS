@@ -87,6 +87,24 @@ export function filterVehicles(vehicles: Vehicle[], rawTerm: string): Vehicle[] 
   })
 }
 
+export function paginateVehicles<T>(
+  items: T[],
+  page: number,
+  pageSize: number,
+): { rows: T[]; totalPages: number; page: number; from: number; to: number } {
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize) || 1)
+  const safePage = Math.min(Math.max(1, page), totalPages)
+  const start = (safePage - 1) * pageSize
+  const rows = items.slice(start, start + pageSize)
+  return {
+    rows,
+    totalPages,
+    page: safePage,
+    from: items.length === 0 ? 0 : start + 1,
+    to: start + rows.length,
+  }
+}
+
 export type VehicleFormValues = {
   vehiIdno: string
   devIdno: string

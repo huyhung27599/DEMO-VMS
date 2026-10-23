@@ -1,38 +1,38 @@
+import { CAMERA_FILTER_OPTIONS } from '../mockData'
 import { usePlaybackStore, type FileListView } from '../store'
 import { onFilePlayClick } from '../videoController'
 import { ChannelTabs } from './ChannelTabs'
 import { CARD_TITLE_SPAN, EMPTY_STATE } from './classes'
+import { PlaybackChrome } from './PlaybackChrome'
 import { PlayerArea } from './PlayerArea'
-
-// LEFT: Video Player + File List (index.html:997-1027) — styles2.css:2911-3128, 3584-3606.
 
 function FileListBody({ view }: { view: FileListView }) {
   switch (view.kind) {
     case 'initial':
       return (
         <div className={EMPTY_STATE}>
-          <i className="fa-solid fa-folder-open fa-2x" style={{ opacity: 0.3 }} aria-hidden="true"></i>
+          <i className="fa-solid fa-folder-open fa-2x" style={{ opacity: 0.3 }} aria-hidden />
           <p>Danh sách video sẽ hiển thị sau khi tìm kiếm</p>
         </div>
       )
     case 'loading':
       return (
         <div className={EMPTY_STATE}>
-          <i className="fa-solid fa-spinner fa-spin fa-2x" style={{ opacity: 0.4 }} aria-hidden="true"></i>
+          <i className="fa-solid fa-spinner fa-spin fa-2x" style={{ opacity: 0.4 }} aria-hidden />
           <p>Đang tải danh sách video...</p>
         </div>
       )
     case 'empty':
       return (
         <div className={EMPTY_STATE}>
-          <i className="fa-solid fa-folder-open fa-2x" style={{ opacity: 0.3 }} aria-hidden="true"></i>
+          <i className="fa-solid fa-folder-open fa-2x" style={{ opacity: 0.3 }} aria-hidden />
           <p>Không tìm thấy video trong khoảng thời gian này</p>
         </div>
       )
     case 'error':
       return (
         <div className={EMPTY_STATE}>
-          <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444' }} aria-hidden="true"></i>
+          <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444' }} aria-hidden />
           <p>Lỗi tải danh sách: {view.message}</p>
         </div>
       )
@@ -71,7 +71,7 @@ function FileListBody({ view }: { view: FileListView }) {
                       data-idx={i}
                       onClick={() => onFilePlayClick(i)}
                     >
-                      <i className="fa-solid fa-play" aria-hidden="true"></i> Phát
+                      <i className="fa-solid fa-play" aria-hidden /> Phát
                     </button>
                   </td>
                 </tr>
@@ -83,46 +83,80 @@ function FileListBody({ view }: { view: FileListView }) {
   }
 }
 
+function cameraLabel(filter: string): string {
+  return CAMERA_FILTER_OPTIONS.find((o) => o.value === filter)?.label ?? 'Camera lái xe'
+}
+
 export function VideoPanel() {
   const plate = usePlaybackStore((s) => s.playerPlate)
   const time = usePlaybackStore((s) => s.playerTime)
   const fileList = usePlaybackStore((s) => s.fileList)
   const fileListCount = usePlaybackStore((s) => s.fileListCount)
   const fileListVisible = usePlaybackStore((s) => s.fileListVisible)
+  const cameraFilter = usePlaybackStore((s) => s.cameraFilter)
+  const channelTabs = usePlaybackStore((s) => s.channelTabs)
+  const player = usePlaybackStore((s) => s.player)
+
+  const activeCam =
+    channelTabs?.active != null
+      ? `Kênh ${channelTabs.active}`
+      : cameraFilter === '0'
+        ? 'Camera lái xe'
+        : cameraLabel(cameraFilter)
+
+  const showMeta = player.kind !== 'initial'
 
   return (
-    <div className="pb-video-col flex flex-col overflow-hidden rounded-[14px] border border-solid border-[rgba(15,23,42,0.12)] bg-[#0b1220] shadow-[0_10px_24px_rgba(15,23,42,0.08)] max-[1280px]:border-b-[rgba(226,232,240,0.85)]">
+    <div className="pb-video-col flex flex-col gap-3 overflow-hidden">
       <div
-        className="pb-player-card relative flex min-h-0 flex-1 flex-col max-[1280px]:h-[450px] max-[1280px]:flex-none"
+        className="pb-player-card relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-sm max-[1280px]:h-[480px] max-[1280px]:flex-none"
         id="pb-player-card"
       >
-        <div className="pb-player-header relative z-[2] flex items-center justify-between border-b border-solid border-white/[0.06] bg-linear-to-b from-[rgba(2,6,23,0.92)] to-[rgba(2,6,23,0.72)] px-5 py-3">
-          <div className="pb-player-info flex flex-col gap-[0.1rem]">
-            <span
-              className="pb-player-plate text-base font-bold tracking-[0.05em] text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.5)]"
-              id="pb-player-plate"
-            >
-              {plate}
-            </span>
-            <span className="pb-player-time text-[0.74rem] text-white/70" id="pb-player-time">
-              {time}
+        {showMeta ? (
+          <div className="pb-player-header relative z-[2] flex items-center justify-between border-b border-[#eef2f6] bg-[#f8fafc] px-5 py-2.5">
+            <div className="pb-player-info flex flex-col gap-[0.1rem]">
+              <span
+                className="pb-player-plate text-[0.95rem] font-bold tracking-[0.04em] text-[#0f172a]"
+                id="pb-player-plate"
+              >
+                {plate}
+              </span>
+              <span className="pb-player-time text-[0.72rem] text-[#94a3b8]" id="pb-player-time">
+                {time}
+              </span>
+            </div>
+            <span className="rounded-lg bg-[#f1f5f9] px-2.5 py-1 text-[0.72rem] font-semibold text-[#64748b]">
+              {activeCam}
             </span>
           </div>
+        ) : (
+          <>
+            <span id="pb-player-plate" className="sr-only">
+              {plate}
+            </span>
+            <span id="pb-player-time" className="sr-only">
+              {time}
+            </span>
+          </>
+        )}
+
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-none bg-[#0f172a]">
+          <PlayerArea />
+          <ChannelTabs />
         </div>
-        <PlayerArea />
-        <ChannelTabs />
+
+        <PlaybackChrome />
       </div>
 
       <div
-        className="pb-filelist-card flex h-[250px] flex-col border-t border-solid border-[rgba(226,232,240,0.85)] bg-white max-[1280px]:h-[200px] min-[1025px]:max-[1919px]:h-[230px]"
+        className="pb-filelist-card flex h-[200px] flex-col overflow-hidden rounded-2xl border border-[#eef2f6] bg-white shadow-sm max-[1280px]:h-[180px]"
         id="pb-filelist-card"
         style={fileListVisible ? undefined : { display: 'none' }}
       >
-        <div className="pb-filelist-header flex items-center justify-between border-b border-solid border-[rgba(226,232,240,0.9)] bg-[#f8fafc] px-5 py-3">
+        <div className="pb-filelist-header flex items-center justify-between border-b border-[#eef2f6] bg-[#f8fafc] px-5 py-3">
           <span className={CARD_TITLE_SPAN}>
-            <i className="fa-solid fa-list-ul" style={{ color: '#3b82f6' }} aria-hidden="true"></i> Danh sách file video
+            <i className="fa-solid fa-list-ul" style={{ color: '#3b82f6' }} aria-hidden /> Danh sách file video
           </span>
-          {/* `.pb-filelist-header span` (0,1,1) thắng `.pb-filelist-count` về cỡ chữ/màu như bản gốc */}
           <span
             className={`pb-filelist-count rounded-full bg-primary/10 px-[0.6rem] py-[0.15rem] ${CARD_TITLE_SPAN}`}
             id="pb-filelist-count"

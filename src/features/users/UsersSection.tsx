@@ -4,15 +4,7 @@ import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
 import { ConfirmDeactivateModal, ConfirmDeleteModal, ResetPasswordModal } from './components/UserConfirmModals'
 import { UserFormModal } from './components/UserFormModal'
-import {
-  DEMO_ENTERPRISE_ID,
-  ENTERPRISES,
-  MOCK_USERS,
-  ROLES,
-  type MockUser,
-  type Persona,
-  type UserStatus,
-} from './mockData'
+import { ENTERPRISES, MOCK_USERS, ROLES, type MockUser, type UserStatus } from './mockData'
 import {
   EMPTY_USER_FORM,
   filterUsers,
@@ -34,7 +26,6 @@ type Dialog =
   | { type: 'reset'; userId: string }
 
 export function UsersSection({ hidden }: { hidden: boolean }) {
-  const [persona, setPersona] = useState<Persona>('super-admin')
   const [users, setUsers] = useState<MockUser[]>(() => [...MOCK_USERS])
   const [draftFilters, setDraftFilters] = useState<UserFilters>({
     search: '',
@@ -46,10 +37,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
   const [page, setPage] = useState(1)
   const [dialog, setDialog] = useState<Dialog>({ type: 'none' })
 
-  const filtered = useMemo(
-    () => filterUsers(users, filters, persona, DEMO_ENTERPRISE_ID),
-    [users, filters, persona],
-  )
+  const filtered = useMemo(() => filterUsers(users, filters), [users, filters])
   const { rows, totalPages, page: safePage, from, to } = useMemo(
     () => paginate(filtered, page),
     [filtered, page],
@@ -75,11 +63,8 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         roleIds: [...u.roleIds],
       }
     }
-    return {
-      ...EMPTY_USER_FORM,
-      enterpriseId: persona === 'enterprise-admin' ? DEMO_ENTERPRISE_ID : '',
-    }
-  }, [dialog, users, persona])
+    return EMPTY_USER_FORM
+  }, [dialog, users])
 
   const editStatus =
     dialog.type === 'form' && dialog.mode === 'edit' && dialog.userId
@@ -142,9 +127,6 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
     closeDialog()
   }
 
-  const availableRoles = ROLES.filter((r) => (persona === 'super-admin' ? true : !r.superOnly))
-  const showEnterprise = persona === 'super-admin'
-
   return (
     <ContentSection id="users" hidden={hidden} className="bg-[#f8fafc]">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -155,32 +137,6 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="mr-1 flex rounded-lg border border-border bg-white p-0.5 text-[0.7rem] font-semibold">
-            <button
-              type="button"
-              className={`cursor-pointer rounded-md border-none px-2.5 py-1 ${persona === 'super-admin' ? 'bg-danger text-white' : 'bg-transparent text-text-muted'}`}
-              onClick={() => {
-                setPersona('super-admin')
-                setDraftFilters((f) => ({ ...f, enterpriseId: '' }))
-                setFilters((f) => ({ ...f, enterpriseId: '' }))
-                setPage(1)
-              }}
-            >
-              Super Admin
-            </button>
-            <button
-              type="button"
-              className={`cursor-pointer rounded-md border-none px-2.5 py-1 ${persona === 'enterprise-admin' ? 'bg-danger text-white' : 'bg-transparent text-text-muted'}`}
-              onClick={() => {
-                setPersona('enterprise-admin')
-                setDraftFilters((f) => ({ ...f, enterpriseId: '' }))
-                setFilters((f) => ({ ...f, enterpriseId: '' }))
-                setPage(1)
-              }}
-            >
-              Quản trị DN
-            </button>
-          </div>
           <Button
             variant="outline"
             size="sm"
@@ -213,27 +169,25 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
             }}
           />
         </div>
-        {showEnterprise ? (
-          <select
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
-            value={draftFilters.enterpriseId}
-            onChange={(e) => setDraftFilters((f) => ({ ...f, enterpriseId: e.target.value }))}
-          >
-            <option value="">Tất cả doanh nghiệp</option>
-            {ENTERPRISES.map((ent) => (
-              <option key={ent.id} value={ent.id}>
-                {ent.name}
-              </option>
-            ))}
-          </select>
-        ) : null}
+        <select
+          className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
+          value={draftFilters.enterpriseId}
+          onChange={(e) => setDraftFilters((f) => ({ ...f, enterpriseId: e.target.value }))}
+        >
+          <option value="">Tất cả doanh nghiệp</option>
+          {ENTERPRISES.map((ent) => (
+            <option key={ent.id} value={ent.id}>
+              {ent.name}
+            </option>
+          ))}
+        </select>
         <select
           className="rounded-lg border border-border bg-white px-3 py-2 text-sm"
           value={draftFilters.roleId}
           onChange={(e) => setDraftFilters((f) => ({ ...f, roleId: e.target.value }))}
         >
           <option value="">Tất cả vai trò</option>
-          {availableRoles.map((r) => (
+          {ROLES.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
             </option>
@@ -263,7 +217,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
               <th className="px-4 py-3 font-semibold">Người dùng</th>
               <th className="px-4 py-3 font-semibold">Tài khoản</th>
               <th className="px-4 py-3 font-semibold">Email</th>
-              {showEnterprise ? <th className="px-4 py-3 font-semibold">Doanh nghiệp</th> : null}
+              <th className="px-4 py-3 font-semibold">Doanh nghiệp</th>
               <th className="px-4 py-3 font-semibold">Vai trò</th>
               <th className="px-4 py-3 font-semibold">Trạng thái</th>
               <th className="px-4 py-3 font-semibold">Đăng nhập cuối</th>
@@ -273,7 +227,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={showEnterprise ? 8 : 7} className="px-4 py-12 text-center text-text-muted">
+                <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
                   Không có người dùng phù hợp bộ lọc
                 </td>
               </tr>
@@ -290,7 +244,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
                   </td>
                   <td className="px-4 py-3.5 text-text-muted">{u.username}</td>
                   <td className="px-4 py-3.5 text-text-muted">{u.email}</td>
-                  {showEnterprise ? <td className="px-4 py-3.5 text-text-muted">{u.enterpriseName}</td> : null}
+                  <td className="px-4 py-3.5 text-text-muted">{u.enterpriseName}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex flex-wrap gap-1">
                       {rolesOf(u.roleIds).map((r) => (
@@ -370,7 +324,6 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
       <UserFormModal
         open={dialog.type === 'form'}
         mode={dialog.type === 'form' ? dialog.mode : 'create'}
-        persona={persona}
         initial={formInitial}
         editStatus={editStatus}
         onClose={closeDialog}

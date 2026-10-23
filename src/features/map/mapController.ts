@@ -15,6 +15,7 @@ import {
   statusUid,
   type DeviceStatus,
 } from './lib'
+import { notifyNavItemClick } from '../../app/useActiveSection'
 import { resetMapStore, useMapStore } from './store'
 import './map.css'
 
@@ -55,8 +56,28 @@ function onPopupAction(e: MouseEvent): void {
   const el = (e.target as Element | null)?.closest?.('[data-map-action]')
   if (!el) return
   const uid = el.getAttribute('data-uid') ?? ''
-  if (el.getAttribute('data-map-action') === 'toggle-icon-settings') toggleIconSettings(uid)
-  else saveIcon(uid)
+  const action = el.getAttribute('data-map-action')
+  if (action === 'toggle-icon-settings') toggleIconSettings(uid)
+  else if (action === 'save-icon') saveIcon(uid)
+  else if (action === 'live-monitor') openLiveMonitor(uid)
+}
+
+/** CTA popup «Giám sát trực tuyến» → focus xe + chuyển tab liveview (+ chọn xe nếu có). */
+function openLiveMonitor(uid: string): void {
+  focusOnVehicle(uid)
+  void import('../liveview/actions').then(({ onVehicleChange }) => {
+    void import('../liveview/store').then(({ useLiveviewStore }) => {
+      const cache = useLiveviewStore.getState().vehiclesCache
+      const idx = cache.findIndex((v) => {
+        const dl = v?.dl
+        if (!Array.isArray(dl) || !dl[0]) return false
+        return String(dl[0].id || dl[0].devIdno || '') === uid
+      })
+      if (idx >= 0) onVehicleChange(String(idx))
+    })
+  })
+  window.location.hash = 'liveview'
+  notifyNavItemClick('liveview')
 }
 
 /** map.js:106-124 — tạo một bản đồ trên container. */
@@ -151,6 +172,7 @@ export async function fetchOnce(): Promise<void> {
         return s
       })
       lastValidStatuses = validStatuses
+      useMapStore.setState({ statuses: validStatuses })
       updateMapMarkers(validStatuses)
     }
   } catch (e) {
@@ -298,30 +320,41 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
     }
 
     let additionalInfo = ''
-    if (s.dn) additionalInfo += `<div><strong>Tài xế:</strong> ${sanitizeHTML(s.dn)}</div>`
     if (s.lc) additionalInfo += `<div><strong>Quãng đường:</strong> ${(s.lc / 1000).toFixed(1)} km</div>`
     if (s.yl) additionalInfo += `<div><strong>Nhiên liệu:</strong> ${(s.yl / 100).toFixed(1)} L</div>`
     if (s.sn) additionalInfo += `<div><strong>Vệ tinh GPS:</strong> ${sanitizeHTML(String(s.sn))}</div>`
 
     const statusText = isOnline
-      ? '<span style="color:green;font-weight:bold">Trực tuyến</span>'
-      : '<span style="color:red;font-weight:bold">Ngoại tuyến</span>'
+      ? '<span style="color:#16a34a;font-weight:700">● Trực tuyến</span>'
+      : '<span style="color:#e11d48;font-weight:700">● Ngoại tuyến</span>'
+    const addr =
+      (typeof s.addr === 'string' && s.addr) ||
+      (typeof s.address === 'string' && s.address) ||
+      `${lat.toFixed(5)}, ${lng.toFixed(5)}`
 
     const popupContent = `
-        <div style="font-family:var(--font-main);min-width:200px;">
-          <h4 style="margin:0 0 8px;color:var(--color-primary);border-bottom:1px solid #eee;padding-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+        <div class="map-popup-card" style="font-family:var(--font-main);min-width:220px;max-width:280px;">
+          <h4 style="margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid #eef2f6;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:0.95rem;font-weight:700;color:#0f172a;">
              <span>${sanitizeHTML(dispName)}</span>
-             <i class="fa-solid fa-palette" style="cursor:pointer;color:#888;font-size:12px;" data-map-action="toggle-icon-settings" data-uid="${attrEscape(uid)}" title="Tuỳ chỉnh icon"></i>
+             <span style="display:inline-flex;align-items:center;gap:6px;font-size:0.72rem;">
+               ${statusText}
+               <i class="fa-solid fa-palette" style="cursor:pointer;color:#94a3b8;font-size:12px;" data-map-action="toggle-icon-settings" data-uid="${attrEscape(uid)}" title="Tuỳ chỉnh icon"></i>
+             </span>
           </h4>
-          <div style="font-size:13px;line-height:1.6;color:var(--color-text-main)">
-            <div><strong>Trạng thái:</strong> ${statusText}</div>
+          <div style="font-size:0.8rem;line-height:1.7;color:#334155">
+            <div><strong>Tài xế:</strong> ${s.dn ? sanitizeHTML(s.dn) : '—'}</div>
             <div><strong>Vận tốc:</strong> ${spd} km/h</div>
             <div><strong>Hướng quay:</strong> ${sanitizeHTML(String(heading))}°</div>
+            <div><strong>Vị trí:</strong> ${sanitizeHTML(String(addr))}</div>
             <div><strong>Cập nhật:</strong> ${sanitizeHTML(timeText)}</div>
             <div><strong>Tọa độ:</strong> ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
             ${additionalInfo}
           </div>
-          <div id="icon-settings-${attrEscape(uid)}" style="display:none; margin-top:10px; padding:8px; background:#f0f2f5; border-radius:4px; font-size:12px;">
+          <button type="button" data-map-action="live-monitor" data-uid="${attrEscape(uid)}"
+            style="margin-top:12px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 12px;border:none;border-radius:10px;background:#e11d48;color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;">
+            <i class="fa-solid fa-video" aria-hidden="true"></i> Giám sát trực tuyến
+          </button>
+          <div id="icon-settings-${attrEscape(uid)}" style="display:none; margin-top:10px; padding:8px; background:#f0f2f5; border-radius:8px; font-size:12px;">
              <div style="margin-bottom:6px;display:flex;justify-content:space-between;">
                Khung xe:
                <select id="icon-type-${attrEscape(uid)}" style="padding:2px 4px; border-radius:3px; border:1px solid #ddd; outline:none;">
@@ -334,7 +367,7 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
                Màu sắc:
                <input type="color" id="icon-color-${attrEscape(uid)}" value="${userColor}" style="border:none; width:30px; height:20px; padding:0; cursor:pointer;">
              </div>
-             <button data-map-action="save-icon" data-uid="${attrEscape(uid)}" class="btn btn-primary" style="width:100%; padding:4px 0; font-size:12px;"><i class="fa-solid fa-save"></i> Lưu giao diện</button>
+             <button type="button" data-map-action="save-icon" data-uid="${attrEscape(uid)}" class="btn btn-primary" style="width:100%; padding:4px 0; font-size:12px;"><i class="fa-solid fa-save"></i> Lưu giao diện</button>
           </div>
         </div>`
 
@@ -345,12 +378,13 @@ export function updateMapMarkers(input: DeviceStatus[]): void {
           ${svgShape}
         </div>`
 
+    const iconPx = userType === 'navigation' ? 20 : 36
     const markerIcon = L.divIcon({
       html: markerHtml,
       className: 'custom-nav-icon',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
-      popupAnchor: [0, -18],
+      iconSize: [iconPx, iconPx],
+      iconAnchor: [iconPx / 2, iconPx / 2],
+      popupAnchor: [0, -(iconPx / 2)],
     })
 
     const upsert = (map: L.Map, markers: MarkerMap, animKey: string) => {

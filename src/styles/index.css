@@ -5,7 +5,8 @@
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 
 @theme static {
-  --color-base: #ffffff;
+  /* Không đặt --color-base: xung đột với utility font-size `text-base` (v4). */
+  --color-surface: #ffffff;
   --color-bg: #ffffff;
   --color-primary: #2a9dd8;
   --color-primary-hover: #2288ba;
@@ -30,6 +31,8 @@
 }
 
 :root {
+  /* Alias cho CSS thuần (styles2); không đưa vào @theme để tránh đè `text-base`. */
+  --color-base: #ffffff;
   --transition-fast: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

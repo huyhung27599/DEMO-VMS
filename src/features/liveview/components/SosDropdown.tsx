@@ -29,7 +29,7 @@ export function SosDropdown() {
         title="Cảnh báo SOS"
         aria-label="Cảnh báo SOS"
         aria-expanded={open}
-        className={`icon-action-btn sos-btn liveview-sos-btn relative flex h-10 w-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-solid bg-base p-2 font-sans text-sm text-text-main transition-all duration-250 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+        className={`icon-action-btn sos-btn liveview-sos-btn relative flex h-10 w-10 cursor-pointer items-center justify-center gap-2 rounded-full border border-solid bg-surface p-2 font-sans text-sm text-text-main transition-all duration-250 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
           open ? 'border-primary shadow-[0_0_0_2px_rgba(42,157,216,0.15)]' : 'border-border'
         }`}
         onClick={(e) => {
@@ -47,7 +47,7 @@ export function SosDropdown() {
       </button>
       <div
         id="sos-dropdown"
-        className={`icon-dropdown sos-dropdown liveview-icon-dropdown absolute top-[calc(100%+8px)] right-0 z-[20000] w-[320px] flex-col overflow-hidden rounded-md border border-solid border-border bg-base shadow-md ${
+        className={`icon-dropdown sos-dropdown liveview-icon-dropdown absolute top-[calc(100%+8px)] right-0 z-[20000] w-[320px] flex-col overflow-hidden rounded-md border border-solid border-border bg-surface shadow-md ${
           open ? 'flex' : 'hidden'
         }`}
       >

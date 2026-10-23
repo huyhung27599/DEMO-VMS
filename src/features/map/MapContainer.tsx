@@ -2,7 +2,7 @@ import { useMapStore } from './store'
 import { mapController } from './mapController'
 
 const BASE =
-  'map-container relative flex-1 overflow-hidden rounded-md border-2 border-solid border-primary bg-[#eee] shadow-md'
+  'map-container relative h-full min-h-[320px] flex-1 overflow-hidden rounded-2xl border border-solid border-[#e2e8f0] bg-[#e8eef4] shadow-sm'
 
 type Props = {
   /** Bản đồ nào trong singleton: #map-container (main) hay #liveview-map (liveView) */

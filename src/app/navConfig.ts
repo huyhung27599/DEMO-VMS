@@ -35,16 +35,16 @@ export const NAV_GROUPS: ReadonlyArray<NavGroup> = [
       { target: 'statistics', icon: 'fa-solid fa-chart-column', text: 'Báo cáo' },
       { target: 'driver', icon: 'fa-solid fa-user', text: 'Quản lý tài xế' },
       { target: 'vehicle', icon: 'fa-solid fa-van-shuttle', text: 'Quản lý phương tiện' },
+      { target: 'devices', icon: 'fa-solid fa-sim-card', text: 'Quản lý thiết bị' },
     ],
   },
   {
     id: 'admin',
     label: 'Quản trị',
     items: [
-      { target: 'devices', icon: 'fa-solid fa-sim-card', text: 'Quản lý thiết bị' },
       { target: 'enterprises', icon: 'fa-solid fa-building', text: 'Quản lý doanh nghiệp' },
+      { target: 'roles', icon: 'fa-solid fa-shield-halved', text: 'Phân quyền' },
       { target: 'users', icon: 'fa-solid fa-user-plus', text: 'Quản lý người dùng' },
-      { target: 'roles', icon: 'fa-solid fa-shield-halved', text: 'Quản lý phân quyền' },
       { target: 'settings', icon: 'fa-solid fa-gear', text: 'Cài đặt hệ thống' },
     ],
   },
@@ -53,22 +53,6 @@ export const NAV_GROUPS: ReadonlyArray<NavGroup> = [
 export type PlaceholderMeta = { title: string; description: string }
 
 export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMeta>>> = {
-  devices: {
-    title: 'Quản lý thiết bị',
-    description: 'Danh sách Box AI và Camera, trạng thái, firmware (SRS 3.16).',
-  },
-  enterprises: {
-    title: 'Quản lý doanh nghiệp',
-    description: 'Quản lý doanh nghiệp / tenant trên hệ thống VMS đa tenant.',
-  },
-  users: {
-    title: 'Quản lý người dùng',
-    description: 'Quản lý tài khoản người dùng VMS (SRS 3.19).',
-  },
-  roles: {
-    title: 'Quản lý phân quyền',
-    description: 'Quản lý vai trò và ma trận quyền (SRS 3.19).',
-  },
   // Giữ stub cũ để deep-link không 404; không hiện trên sidebar mới
   'static-images': {
     title: 'Ảnh tĩnh',
@@ -109,9 +93,6 @@ export const PLACEHOLDER_PAGES: Readonly<Partial<Record<AppRoute, PlaceholderMet
 }
 
 export const STUB_ROUTES = [
-  'devices',
-  'enterprises',
-  'roles',
   'static-images',
   'ai-events',
   'reports-trips',

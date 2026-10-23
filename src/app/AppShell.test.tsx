@@ -99,13 +99,11 @@ describe('AppShell', () => {
     await waitFor(() => expect(document.getElementById('user-info')).toHaveTextContent('a&amp;b'))
   })
 
-  it('Cài đặt: nút "Thay đổi mật khẩu ngay" mở modal đổi mật khẩu', async () => {
+  it('Cài đặt: hiển thị cấu hình chung và nút lưu', async () => {
     app = renderApp({ hash: '#settings' })
-    const btn = await screen.findByRole('button', { name: /Thay đổi mật khẩu ngay/ })
-    expect(document.getElementById('change-password-modal')).toHaveAttribute('aria-hidden', 'true')
-    fireEvent.click(btn)
-    expect(document.getElementById('change-password-modal')).toHaveAttribute('aria-hidden', 'false')
-    expect(screen.getByRole('button', { name: 'Sắp ra mắt' })).toBeDisabled()
+    expect(await screen.findByRole('heading', { name: 'Cài đặt hệ thống' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Lưu cấu hình/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cấu hình chung' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('nút Đăng xuất ở sidebar mở modal xác nhận', async () => {

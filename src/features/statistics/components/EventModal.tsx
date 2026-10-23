@@ -157,7 +157,7 @@ export function EventModal() {
       aria-hidden={open ? 'false' : 'true'}
     >
       <div
-        className="flex w-[90%] max-w-[800px] flex-col overflow-hidden rounded-md bg-base shadow-md"
+        className="flex w-[90%] max-w-[800px] flex-col overflow-hidden rounded-md bg-surface shadow-md"
         role="dialog"
         aria-modal="true"
         aria-labelledby="stat-modal-title"

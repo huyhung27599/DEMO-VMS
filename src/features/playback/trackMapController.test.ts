@@ -92,17 +92,20 @@ describe('initMap', () => {
     expect(addTerritorialOverlays).toHaveBeenCalledWith(theMap())
     expect(getTrackMap()).toBe(theMap())
     expect(st().trackMapInitialized).toBe(true)
-    expect(created.tileLayers[0].url).toBe('https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png')
-    expect(created.tileLayers[0].options).toEqual({ minZoom: 6, maxZoom: 19, attribution: '@GTEL - GEIC' })
-    for (let i = 0; i < 3; i++) created.tileLayers[0].fire('tileerror')
-    expect(console.warn).toHaveBeenCalledWith('[Playback] Custom tile server lỗi, chuyển sang CartoDB Voyager')
-    expect(created.tileLayers[1].url).toBe('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png')
-    expect(created.tileLayers[1].options).toEqual({
+    expect(created.tileLayers[0].url).toBe(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    )
+    expect(created.tileLayers[0].options).toEqual({
       minZoom: 6,
       maxZoom: 19,
       attribution: '@GTEL - GEIC',
       subdomains: 'abcd',
     })
+    expect(created.tileLayers[1].url).toBe('https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png')
+    expect(created.tileLayers[1].options).toEqual({ minZoom: 6, maxZoom: 19, attribution: '@GTEL - GEIC' })
+    for (let i = 0; i < 3; i++) created.tileLayers[1].fire('tileerror')
+    expect(console.warn).toHaveBeenCalledWith('[MapModule] Custom tile server lỗi, chuyển sang CartoDB Voyager')
+    expect(theMap().removeLayer).toHaveBeenCalledWith(created.tileLayers[1])
 
     await vi.advanceTimersByTimeAsync(399)
     expect(theMap().invalidateSize).not.toHaveBeenCalled()

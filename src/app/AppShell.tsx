@@ -7,6 +7,9 @@ import { MapSection } from '../features/map/MapSection'
 import { PlaybackSection } from '../features/playback/PlaybackSection'
 import { SettingsSection } from '../features/settings/SettingsSection'
 import { StatisticsSection } from '../features/statistics/StatisticsSection'
+import { DevicesSection } from '../features/devices/DevicesSection'
+import { EnterprisesSection } from '../features/enterprises/EnterprisesSection'
+import { RolesSection } from '../features/roles/RolesSection'
 import { UsersSection } from '../features/users/UsersSection'
 import { VehicleSection } from '../features/vehicle/VehicleSection'
 import { GlobalLoader } from '../shared/ui/GlobalLoader'
@@ -38,6 +41,9 @@ export function AppShell({ hidden }: { hidden: boolean }) {
         <VehicleSection hidden={active !== 'vehicle'} />
         <EventServerSection hidden={active !== 'event-server'} />
         <UsersSection hidden={active !== 'users'} />
+        <EnterprisesSection hidden={active !== 'enterprises'} />
+        <RolesSection hidden={active !== 'roles'} />
+        <DevicesSection hidden={active !== 'devices'} />
         {STUB_ROUTES.map((routeId) => (
           <PlaceholderSection key={routeId} routeId={routeId} hidden={active !== routeId} />
         ))}

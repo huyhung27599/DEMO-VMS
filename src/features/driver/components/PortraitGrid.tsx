@@ -9,17 +9,17 @@ type PortraitCellProps = { idx: number; imgSrc: string; onRemove: (slot: number)
 function PortraitCell({ idx, imgSrc, onRemove }: PortraitCellProps) {
   const [broken, setBroken] = useState(false)
   return (
-    <div className="relative h-16 overflow-hidden rounded-[10px] border border-black/8 bg-[#f1f5f9]">
+    <div className="relative aspect-square overflow-hidden rounded-xl border border-[#e2e8f0] bg-[#1e293b]">
       {broken ? (
-        <div className="flex h-16 items-center justify-center text-[#94a3b8]">
-          <i className="fa-solid fa-image" aria-hidden="true"></i>
+        <div className="flex size-full items-center justify-center text-[#94a3b8]">
+          <i className="fa-solid fa-face-viewfinder text-xl" aria-hidden="true"></i>
         </div>
       ) : (
         <>
           <img src={imgSrc} alt={`Portrait ${idx + 1}`} className="size-full object-cover" onError={() => setBroken(true)} />
           <button
             type="button"
-            className="driver-portrait-remove-btn absolute top-[2px] right-[2px] size-[22px] cursor-pointer rounded-full border-none bg-black/55 p-0 text-xs leading-none text-white focus-visible:outline-2 focus-visible:outline-primary"
+            className="driver-portrait-remove-btn absolute top-1.5 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-full border-none bg-black/55 p-0 text-xs leading-none text-white focus-visible:outline-2 focus-visible:outline-primary"
             data-slot={idx}
             title="Gỡ ảnh"
             aria-label="Gỡ ảnh"
@@ -42,7 +42,7 @@ type PortraitGridProps = {
 
 export function PortraitGrid({ portraitLocalBase64, portraitServerUrls, onAdd, onRemove }: PortraitGridProps) {
   return (
-    <div id="driver-portraitLibrary" className="grid grid-cols-5 gap-2">
+    <div id="driver-portraitLibrary" className="grid grid-cols-5 gap-2 max-[520px]:grid-cols-3">
       {Array.from({ length: MAX_DRIVER_PHOTOS }).map((_, idx) => {
         const localB64 = portraitLocalBase64[idx]
         const serverRaw = portraitServerUrls[idx]
@@ -53,16 +53,18 @@ export function PortraitGrid({ portraitLocalBase64, portraitServerUrls, onAdd, o
           return (
             <div
               key={`empty-${idx}`}
-              className="driver-portrait-cell flex h-16 flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-border bg-[#f8fafc] p-1 text-[#64748b]"
+              className="driver-portrait-cell flex aspect-square flex-col items-center justify-center rounded-xl border border-dashed border-[#cbd5e1] bg-[#f8fafc] text-[#64748b]"
             >
               <button
                 type="button"
-                className="driver-portrait-add-btn cursor-pointer rounded-md border border-border bg-white px-2 py-1 text-[0.7rem] font-semibold text-primary focus-visible:outline-2 focus-visible:outline-primary"
+                className="driver-portrait-add-btn flex size-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-none bg-transparent text-[#94a3b8] focus-visible:outline-2 focus-visible:outline-primary"
                 data-slot={idx}
                 title={`Thêm ảnh vào ô ${idx + 1}`}
+                aria-label={`Thêm ảnh vào ô ${idx + 1}`}
                 onClick={() => onAdd(idx)}
               >
-                <i className="fa-solid fa-upload mr-1" aria-hidden="true"></i>Thêm ảnh
+                <i className="fa-solid fa-plus text-lg" aria-hidden="true"></i>
+                <span className="text-[0.65rem] font-semibold">Thêm ảnh</span>
               </button>
             </div>
           )

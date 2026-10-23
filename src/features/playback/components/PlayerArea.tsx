@@ -113,11 +113,17 @@ function PlayerContent({ view }: { view: PlayerView }) {
     case 'initial':
       return (
         <div className={PLACEHOLDER} id="pb-player-placeholder">
-          <i className="fa-solid fa-film fa-3x" style={{ opacity: 0.3, marginBottom: '.75rem' }} aria-hidden="true"></i>
-          <p className="text-center">
+          <button
+            type="button"
+            className="flex size-16 cursor-default items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/80 shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+            aria-label="Chờ phát"
+          >
+            <i className="fa-solid fa-play ml-1 text-2xl" aria-hidden="true"></i>
+          </button>
+          <p className="max-w-[280px] text-center text-[0.85rem] text-white/45">
             Chọn phương tiện và khoảng thời gian
             <br />
-            rồi nhấn <strong>Tìm kiếm</strong>
+            rồi nhấn <strong className="text-white/70">Tìm kiếm</strong>
           </p>
         </div>
       )

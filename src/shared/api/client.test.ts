@@ -20,25 +20,17 @@ function jsonResponse(body: unknown, status = 200) {
 const csrf = (t = 'csrf-1') => jsonResponse({ result: 0, csrfToken: t })
 
 describe('resolveBaseUrl', () => {
-  it('localhost -> port 4000', () => {
-    expect(resolveBaseUrl({ hostname: 'localhost', protocol: 'http:' })).toBe(
-      'http://localhost:4000/api/',
-    )
+  it('localhost uses same-origin /api so the dev proxy can forward cookies', () => {
+    expect(resolveBaseUrl({ hostname: 'localhost', protocol: 'http:' })).toBe('/api/')
+    expect(resolveBaseUrl({ hostname: '127.0.0.1', protocol: 'http:' })).toBe('/api/')
   })
-  it('IP -> port 4000', () => {
+  it('other hosts call the remote API directly', () => {
     expect(resolveBaseUrl({ hostname: '192.168.1.5', protocol: 'http:' })).toBe(
-      'http://192.168.1.5:4000/api/',
+      'http://119.17.211.170:4000/api/',
     )
-  })
-  it('dashcam.geicdashcam.cloud special case', () => {
     expect(
       resolveBaseUrl({ hostname: 'dashcam.geicdashcam.cloud', protocol: 'https:' }),
-    ).toBe('https://apidashcam.geicdashcam.cloud/api/')
-  })
-  it('replaces first label with api.', () => {
-    expect(resolveBaseUrl({ hostname: 'app.example.com', protocol: 'https:' })).toBe(
-      'https://api.example.com/api/',
-    )
+    ).toBe('http://119.17.211.170:4000/api/')
   })
 })
 

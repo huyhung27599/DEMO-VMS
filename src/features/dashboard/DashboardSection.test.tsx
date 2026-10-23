@@ -2,15 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, screen } from '@testing-library/react'
 import { expectPolling } from '../../test/expectPolling'
 import { renderWithProviders } from '../../test/renderWithProviders'
-import { notifySectionShown } from '../../app/useActiveSection'
-
 vi.mock('./loaders', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./loaders')>()),
   refresh: vi.fn(async () => {}),
   pollRealtimeAlarms: vi.fn(async () => {}),
 }))
 
-import { dashboardCharts } from './chartsController'
 import { pollRealtimeAlarms, refresh } from './loaders'
 import { dashboardKeys } from './queries'
 import { DashboardSection } from './DashboardSection'
@@ -74,13 +71,17 @@ describe('DashboardSection (chưa đăng nhập)', () => {
     await expectPolling(vi.mocked(refresh), 120_000)
   })
 
-  it('onSectionShown("dashboard") resize các biểu đồ', async () => {
-    const resize = vi.spyOn(dashboardCharts, 'resize')
+  it('hiển thị 4 KPI và bộ lọc Hôm nay theo mockup', async () => {
     renderWithProviders(<DashboardSection hidden={false} />)
     await settle()
-    expect(screen.getByText('Trung tâm điều khiển')).toBeInTheDocument()
-    notifySectionShown('dashboard')
-    expect(resize).toHaveBeenCalled()
+    expect(screen.getByText('Tổng phương tiện')).toBeInTheDocument()
+    expect(screen.getByText('Cảnh báo hôm nay')).toBeInTheDocument()
+    expect(screen.getByText('Tài xế hoạt động')).toBeInTheDocument()
+    expect(screen.getByText('Thiết bị online')).toBeInTheDocument()
+    expect(screen.getByText('Cảnh báo theo loại (hôm nay)')).toBeInTheDocument()
+    expect(screen.getByText('Top xe cảnh báo')).toBeInTheDocument()
+    expect(screen.getByText('Cảnh báo mới nhất')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: /khoảng thời gian/i })).toHaveValue('today')
   })
 
   it('đã đăng nhập khi tải trang: refresh() chạy ngay lúc mount, một lần kể cả StrictMode', async () => {

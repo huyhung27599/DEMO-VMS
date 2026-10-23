@@ -1,203 +1,136 @@
-import { useEffect, useRef } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { onSectionShown } from '../../app/useActiveSection'
+import { useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useModuleEnabled } from '../../app/useModuleEnabled'
-import { ContentSection, SectionHeader } from '../../shared/ui/Section'
-import { dashboardCharts } from './chartsController'
-import { AlarmFeed } from './components/AlarmFeed'
-import { ChartCard } from './components/ChartCard'
+import { ContentSection } from '../../shared/ui/Section'
+import { AlertTypeBars } from './components/AlertTypeBars'
 import { KpiCard } from './components/KpiCard'
-import { LiveVehiclesPanel } from './components/LiveVehiclesPanel'
+import { LatestAlertsTable } from './components/LatestAlertsTable'
+import { TopAlertVehicles } from './components/TopAlertVehicles'
 import './dashboard.css'
 import { initDashboard } from './init'
-import { dashboardKeys, dashboardRefreshQueryOptions, realtimeAlarmsQueryOptions } from './queries'
+import { PERIOD_OPTIONS, type DashboardPeriod } from './mockData'
+import { dashboardRefreshQueryOptions, realtimeAlarmsQueryOptions } from './queries'
 import { useDashboardStore } from './store'
+
+function formatAlarmsDelta(delta: number): string {
+  if (delta === 0) return 'Bằng hôm qua'
+  const sign = delta > 0 ? '+' : ''
+  return `${sign}${delta} so với hôm qua`
+}
 
 export function DashboardSection({ hidden }: { hidden: boolean }) {
   const enabled = useModuleEnabled('dashboard')
-  const queryClient = useQueryClient()
-  // Hai setInterval của init(): 120_000 ms (refresh) và 60_000 ms (pollRealtimeAlarms)
   useQuery({ ...dashboardRefreshQueryOptions(), enabled })
   useQuery({ ...realtimeAlarmsQueryOptions(), enabled })
 
   const kpi = useDashboardStore((s) => s.kpi)
-  const onlinePct = useDashboardStore((s) => s.onlinePct)
-  const offlinePct = useDashboardStore((s) => s.offlinePct)
-  const bars = useDashboardStore((s) => s.bars)
   const lastUpdated = useDashboardStore((s) => s.lastUpdated)
-  const refreshing = useDashboardStore((s) => s.refreshing)
+  const period = useDashboardStore((s) => s.period)
 
-  const statusRef = useRef<HTMLDivElement>(null)
-  const trendRef = useRef<HTMLDivElement>(null)
-  const alarmRankRef = useRef<HTMLDivElement>(null)
-  const mileageRef = useRef<HTMLDivElement>(null)
-  const alarmDistRef = useRef<HTMLDivElement>(null)
-
-  // initCharts() + resize khi quay lại section (nav click -> setTimeout 150 ms, đã nằm trong onSectionShown)
   useEffect(() => {
     initDashboard()
-    dashboardCharts.initCharts({
-      vehicleStatus: statusRef.current,
-      onlineTrend: trendRef.current,
-      alarmRank: alarmRankRef.current,
-      mileageRank: mileageRef.current,
-      alarmDist: alarmDistRef.current,
-    })
-    const unsubscribe = onSectionShown('dashboard', () => dashboardCharts.resize())
-    return () => {
-      unsubscribe()
-      dashboardCharts.dispose()
-    }
   }, [])
 
   return (
-    <ContentSection id="dashboard" hidden={hidden}>
-      <SectionHeader title="Trung tâm điều khiển" subtitle={<span id="dashboard-last-updated">{lastUpdated}</span>}>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            id="dashboard-refresh-btn"
-            title="Làm mới dữ liệu"
-            aria-label="Làm mới dữ liệu"
-            onClick={() => void queryClient.refetchQueries({ queryKey: dashboardKeys.refresh })}
-            className="flex size-9 cursor-pointer items-center justify-center rounded-md border border-border bg-base p-0 text-text-muted transition-all duration-250 hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <i className={`fa-solid fa-arrows-rotate ${refreshing ? 'animate-[spin_0.8s_linear_infinite]' : ''}`}></i>
-          </button>
+    <ContentSection id="dashboard" hidden={hidden} className="bg-[#f8fafc]">
+      {/* Header khớp mockup: tiêu đề đen, subtitle xám, chỉ dropdown Hôm nay */}
+      <header className="mb-6 flex items-start justify-between gap-4 max-[640px]:flex-col">
+        <div>
+          <h2 className="m-0 text-[1.65rem] font-bold tracking-tight text-[#0f172a]">Trung tâm điều khiển</h2>
+          <p id="dashboard-last-updated" className="mt-1 mb-0 text-[0.85rem] text-[#94a3b8]">
+            {lastUpdated}
+          </p>
         </div>
-      </SectionHeader>
+        <label className="sr-only" htmlFor="dashboard-period">
+          Khoảng thời gian
+        </label>
+        <select
+          id="dashboard-period"
+          value={period}
+          onChange={(e) => useDashboardStore.setState({ period: e.target.value as DashboardPeriod })}
+          className="cursor-pointer rounded-xl border border-[#e2e8f0] bg-white px-3.5 py-2.5 text-sm font-medium text-[#334155] shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e11d48]"
+        >
+          {PERIOD_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </header>
 
-      {/* KPI Stat Cards Row */}
-      <div className="mb-5 grid grid-cols-6 gap-4 max-[1400px]:grid-cols-3 max-[768px]:grid-cols-2">
+      <div className="mb-5 grid grid-cols-4 gap-4 max-[1200px]:grid-cols-2 max-[560px]:grid-cols-1">
         <KpiCard
           id="kpi-total-vehicles"
-          color="blue"
-          icon="fa-truck-front"
+          variant="navy"
+          icon="fa-bus"
           label="Tổng phương tiện"
           valueId="kpi-val-total"
-          value={kpi.total}
-          sub="Thiết bị đã đăng ký"
-          bar={{ width: 100, faded: true }}
-        />
-        <KpiCard
-          id="kpi-online-vehicles"
-          color="green"
-          icon="fa-signal"
-          label="Đang trực tuyến"
-          valueId="kpi-val-online"
-          value={kpi.online}
+          value={kpi.totalVehicles}
           sub={
             <>
-              <span id="kpi-online-pct">{onlinePct}</span>% tổng đội xe
+              <span id="kpi-val-online" className="font-semibold">
+                {kpi.onlineVehicles}
+              </span>{' '}
+              đang trực tuyến
             </>
           }
-          bar={{ id: 'kpi-online-bar', width: bars.online }}
-        />
-        <KpiCard
-          id="kpi-offline-vehicles"
-          color="gray"
-          icon="fa-wifi-slash"
-          label="Ngoại tuyến"
-          valueId="kpi-val-offline"
-          value={kpi.offline}
-          sub={
-            <>
-              <span id="kpi-offline-pct">{offlinePct}</span>% tổng đội xe
-            </>
-          }
-          bar={{ id: 'kpi-offline-bar', width: bars.offline, faded: true }}
-        />
-        <KpiCard
-          id="kpi-moving-vehicles"
-          color="teal"
-          icon="fa-route"
-          label="Đang di chuyển"
-          valueId="kpi-val-moving"
-          value={kpi.moving}
-          sub="Xe đang có tín hiệu GPS"
-          bar={{ id: 'kpi-moving-bar', width: bars.moving }}
         />
         <KpiCard
           id="kpi-alarms-today"
-          color="red"
+          variant="red"
           icon="fa-triangle-exclamation"
-          label="Báo động hôm nay"
+          label="Cảnh báo hôm nay"
           valueId="kpi-val-alarms"
-          value={kpi.alarms}
-          sub="Sự kiện chưa xử lý"
+          value={kpi.alarmsToday}
+          sub={<span id="kpi-alarms-delta">{formatAlarmsDelta(kpi.alarmsDelta)}</span>}
           pulse
         />
         <KpiCard
-          id="kpi-total-mileage"
-          color="purple"
-          icon="fa-road"
-          label="Quãng đường hôm nay"
-          valueId="kpi-val-mileage"
-          value={kpi.mileage}
-          sub="Kilomet (KM)"
-          bar={{ id: 'kpi-mileage-bar', width: bars.mileage }}
+          id="kpi-active-drivers"
+          variant="amber"
+          icon="fa-users"
+          label="Tài xế hoạt động"
+          valueId="kpi-val-active-drivers"
+          value={kpi.activeDrivers}
+          sub={
+            <>
+              trên tổng{' '}
+              <span id="kpi-val-total-drivers" className="font-semibold">
+                {kpi.totalDrivers}
+              </span>{' '}
+              tài xế
+            </>
+          }
+        />
+        <KpiCard
+          id="kpi-devices-online"
+          variant="slate"
+          icon="fa-sim-card"
+          label="Thiết bị online"
+          valueId="kpi-val-devices"
+          value={
+            <>
+              {kpi.devicesOnline}
+              <span className="text-[1.35rem] font-semibold opacity-60">/{kpi.devicesTotal}</span>
+            </>
+          }
+          sub={
+            <>
+              <span id="kpi-val-devices-lost" className="font-semibold">
+                {kpi.devicesLost}
+              </span>{' '}
+              mất tín hiệu
+            </>
+          }
         />
       </div>
 
-      {/* Main Dashboard Grid: Charts + Live Table */}
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_340px] gap-5 max-[1100px]:grid-cols-1">
-        {/* LEFT COLUMN: Charts */}
-        <div className="flex min-w-0 flex-col gap-5">
-          <div className="flex gap-5 max-[1100px]:flex-wrap">
-            <ChartCard
-              size="sm"
-              icon="fa-chart-pie"
-              iconColor="#3b82f6"
-              title="Trạng thái phương tiện"
-              badge={{ id: 'chart-vehicle-status-badge', text: 'Thời gian thực', color: 'blue' }}
-              bodyId="chart-vehicle-status"
-              bodyRef={statusRef}
-            />
-            <ChartCard
-              size="lg"
-              icon="fa-wave-square"
-              iconColor="#10b981"
-              title="Xu hướng trực tuyến (hôm nay)"
-              bodyId="chart-online-trend"
-              bodyRef={trendRef}
-            />
-          </div>
-          <div className="flex gap-5 max-[1100px]:flex-wrap">
-            <ChartCard
-              size="md"
-              icon="fa-ranking-star"
-              iconColor="#ef4444"
-              title="Top xe báo động"
-              badge={{ id: 'alarm-rank-period', text: 'Hôm nay', color: 'red' }}
-              bodyId="chart-alarm-rank"
-              bodyRef={alarmRankRef}
-            />
-            <ChartCard
-              size="md"
-              icon="fa-road"
-              iconColor="#8b5cf6"
-              title="Quãng đường (KM)"
-              badge={{ id: 'mileage-rank-period', text: 'Hôm nay', color: 'purple' }}
-              bodyId="chart-mileage-rank"
-              bodyRef={mileageRef}
-            />
-            <ChartCard
-              size="sm"
-              icon="fa-circle-nodes"
-              iconColor="#f59e0b"
-              title="Phân loại báo động"
-              bodyId="chart-alarm-distribution"
-              bodyRef={alarmDistRef}
-            />
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Live Vehicle Table + Activity Feed */}
-        <div className="flex min-w-0 flex-col gap-5 max-[1100px]:grid max-[1100px]:grid-cols-2 max-[768px]:grid-cols-1">
-          <LiveVehiclesPanel />
-          <AlarmFeed />
-        </div>
+      <div className="mb-5 grid grid-cols-[1.45fr_1fr] gap-4 max-[960px]:grid-cols-1">
+        <AlertTypeBars />
+        <TopAlertVehicles />
       </div>
+
+      <LatestAlertsTable />
     </ContentSection>
   )
 }

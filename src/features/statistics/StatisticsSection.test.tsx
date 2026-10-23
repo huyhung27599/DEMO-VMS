@@ -82,8 +82,8 @@ describe('StatisticsSection', () => {
   it('chưa hiển thị app -> không tải; tải đúng 1 lần ở lần showApp đầu (kể cả StrictMode)', async () => {
     useAuthStore.setState({ view: 'login', hasShownApp: false })
     setup(makeAlarms(3), true)
-    expect(await screen.findByText('Thống kê dữ liệu giám sát')).toBeInTheDocument()
-    expect(screen.getByText('Đang tải dữ liệu...')).toBeInTheDocument()
+    expect(await screen.findByText('Báo cáo')).toBeInTheDocument()
+    expect(screen.getByText('Đang tải dữ liệu...', { exact: false })).toBeInTheDocument()
     expect(m.vehicles).not.toHaveBeenCalled()
     act(() => useAuthStore.setState({ view: 'app', hasShownApp: true }))
     await loaded()

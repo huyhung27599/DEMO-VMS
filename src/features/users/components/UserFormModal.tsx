@@ -1,13 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalBody, ModalFooter, modalInputClass } from '../../../shared/ui/Modal'
-import { DEMO_ENTERPRISE_ID, ENTERPRISES, ROLES, type MockUser, type Persona } from '../mockData'
+import { ENTERPRISES, ROLES, type MockUser } from '../mockData'
 import { EMPTY_USER_FORM, statusLabel, validateUserForm, type UserFormValues } from '../lib'
 
 type UserFormModalProps = {
   open: boolean
   mode: 'create' | 'edit'
-  persona: Persona
   initial: UserFormValues
   editStatus?: MockUser['status']
   onClose: () => void
@@ -20,7 +19,6 @@ const sectionTitle = 'mb-3 text-[0.7rem] font-bold tracking-[0.08em] text-[#94a3
 export function UserFormModal({
   open,
   mode,
-  persona,
   initial,
   editStatus,
   onClose,
@@ -31,13 +29,9 @@ export function UserFormModal({
 
   useEffect(() => {
     if (!open) return
-    const next = { ...initial }
-    if (persona === 'enterprise-admin') next.enterpriseId = DEMO_ENTERPRISE_ID
-    setValues(next)
+    setValues({ ...initial })
     setError('')
-  }, [open, initial, persona])
-
-  const availableRoles = ROLES.filter((r) => (persona === 'super-admin' ? true : !r.superOnly))
+  }, [open, initial])
 
   const onFormSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -149,7 +143,6 @@ export function UserFormModal({
               <select
                 id="user-enterprise"
                 className={modalInputClass}
-                disabled={persona === 'enterprise-admin'}
                 value={values.enterpriseId}
                 onChange={(e) => setValues((v) => ({ ...v, enterpriseId: e.target.value }))}
               >
@@ -167,7 +160,7 @@ export function UserFormModal({
                 <span className="font-normal text-text-muted">(chọn nhiều)</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {availableRoles.map((role) => {
+                {ROLES.map((role) => {
                   const on = values.roleIds.includes(role.id)
                   return (
                     <button

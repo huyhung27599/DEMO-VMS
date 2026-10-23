@@ -15,32 +15,36 @@ beforeEach(() => resetLeafletMock())
 afterEach(() => vi.unstubAllGlobals())
 
 describe('addTileLayerWithFallback (map.js:79-97)', () => {
-  it('thêm tile server riêng; lỗi tile lần thứ 3 -> gỡ và thêm CartoDB Voyager (subdomains abcd)', () => {
+  it('thêm CartoDB nền + tile GEIC; lỗi tile lần thứ 3 -> gỡ GEIC (giữ CartoDB)', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const map = fakeMap()
     const layer = addTileLayerWithFallback(map as unknown as LeafletMap)
-    const custom = created.tileLayers[0]
-    expect(layer).toBe(custom)
-    expect(custom.url).toBe('https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png')
-    expect(custom.options).toEqual({ minZoom: 6, maxZoom: 19, attribution: '@GTEL - GEIC' })
-    expect(custom.addTo).toHaveBeenCalledWith(map)
-    custom.fire('tileerror')
-    custom.fire('tileerror')
-    expect(created.tileLayers).toHaveLength(1)
-    custom.fire('tileerror')
-    expect(map.removeLayer).toHaveBeenCalledWith(custom)
     expect(created.tileLayers).toHaveLength(2)
-    expect(created.tileLayers[1].url).toBe('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png')
-    expect(created.tileLayers[1].options).toEqual({
+    expect(created.tileLayers[0].url).toBe(
+      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    )
+    expect(created.tileLayers[0].options).toEqual({
       minZoom: 6,
       maxZoom: 19,
       attribution: '@GTEL - GEIC',
       subdomains: 'abcd',
     })
-    expect(warn).toHaveBeenCalledWith('[MapModule] Custom tile server lỗi, chuyển sang CartoDB Voyager')
-    // bản gốc: mỗi lỗi tiếp theo lại thêm một lớp fallback nữa
+    const custom = created.tileLayers[1]
+    expect(layer).toBe(custom)
+    expect(custom.url).toBe('https://map.geicdashcam.cloud/tiles/tile/{z}/{x}/{y}.png')
+    expect(custom.options).toEqual({ minZoom: 6, maxZoom: 19, attribution: '@GTEL - GEIC' })
+    expect(custom.addTo).toHaveBeenCalledWith(map)
+
     custom.fire('tileerror')
-    expect(created.tileLayers).toHaveLength(3)
+    custom.fire('tileerror')
+    expect(map.removeLayer).not.toHaveBeenCalled()
+    custom.fire('tileerror')
+    expect(map.removeLayer).toHaveBeenCalledWith(custom)
+    expect(warn).toHaveBeenCalledWith('[MapModule] Custom tile server lỗi, chuyển sang CartoDB Voyager')
+    // không thêm lớp fallback trùng
+    custom.fire('tileerror')
+    expect(created.tileLayers).toHaveLength(2)
+    expect(map.removeLayer).toHaveBeenCalledTimes(1)
     warn.mockRestore()
   })
 })

@@ -109,7 +109,7 @@ describe('thời điểm nạp dữ liệu (init + hashchange của vehicle.js)'
 })
 
 describe('bảng phương tiện', () => {
-  it('hiển thị cột biển số, ID thiết bị, loại, màu, nhóm', async () => {
+  it('hiển thị biển số, loại, thiết bị và thao tác', async () => {
     await renderVehicle()
     const rows = screen.getAllByRole('row')
     expect(rows).toHaveLength(4) // header + 3
@@ -117,17 +117,17 @@ describe('bảng phương tiện', () => {
     expect(r1.getByText('29A-111')).toBeInTheDocument()
     expect(r1.getByText('DEV1')).toBeInTheDocument()
     expect(r1.getByText('Xe con')).toBeInTheDocument()
-    expect(r1.getByText('Trắng')).toBeInTheDocument()
-    expect(r1.getByText('Công ty A')).toBeInTheDocument()
+    expect(r1.getByTitle('Chỉnh sửa')).toBeInTheDocument()
+    expect(r1.getByTitle('Xóa')).toBeInTheDocument()
+    expect(r1.getByTitle('Chi tiết')).toBeInTheDocument()
     const r3 = within(rows[3])
     expect(r3.getByText('Chưa phân loại')).toBeInTheDocument()
     expect(r3.getByText('--', { selector: 'code' })).toBeInTheDocument()
-    expect(r3.getAllByText('--')).toHaveLength(3) // màu, nhóm, ID thiết bị
   })
 
   it('tìm kiếm debounce 300 ms', async () => {
     await renderVehicle()
-    const input = screen.getByPlaceholderText('Tìm biển số, ID thiết bị...')
+    const input = screen.getByPlaceholderText('Tìm theo biển số, thiết bị, tài xế...')
     fireEvent.change(input, { target: { value: '30b' } })
     await settle(299)
     expect(screen.getByText('29A-111')).toBeInTheDocument()
@@ -138,7 +138,9 @@ describe('bảng phương tiện', () => {
 
   it('không khớp -> thông báo trống', async () => {
     await renderVehicle()
-    fireEvent.change(screen.getByPlaceholderText('Tìm biển số, ID thiết bị...'), { target: { value: 'zzz' } })
+    fireEvent.change(screen.getByPlaceholderText('Tìm theo biển số, thiết bị, tài xế...'), {
+      target: { value: 'zzz' },
+    })
     await settle(300)
     expect(screen.getByText('Không tìm thấy phương tiện nào')).toBeInTheDocument()
   })
@@ -147,14 +149,14 @@ describe('bảng phương tiện', () => {
 describe('thêm / sửa phương tiện (handleSave)', () => {
   it('thêm: gọi addVehicle với payload form, toast, đóng modal, nạp lại', async () => {
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
-    expect(screen.getByText('Thêm phương tiện mới', { selector: 'h3' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
+    expect(screen.getByText('Thêm phương tiện', { selector: 'h3' })).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: '77Z-999' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'DEV9' } })
     fireEvent.change(screen.getByLabelText(/Loại phương tiện/), { target: { value: '3' } })
     fireEvent.change(screen.getByLabelText(/Màu sắc xe/), { target: { value: 'Xanh' } })
     fireEvent.change(screen.getByLabelText(/Nhóm quản lý/), { target: { value: 'c1' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(api.addVehicle).toHaveBeenCalledWith({
       vehiIdno: '77Z-999',
@@ -171,10 +173,10 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
 
   it('mặc định form thêm: loại Xe con, đơn vị trống', async () => {
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'B' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(api.addVehicle).toHaveBeenCalledWith({
       vehiIdno: 'A',
@@ -187,9 +189,9 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
 
   it('thiếu biển số hoặc ID thiết bị -> toast cảnh báo, không gọi API, không đóng modal', async () => {
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(toasts()).toEqual([['warning', 'Vui lòng nhập đầy đủ Biển số và ID thiết bị']])
     expect(api.addVehicle).not.toHaveBeenCalled()
@@ -199,7 +201,7 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
   it('sửa: điền sẵn dữ liệu, biển số chỉ đọc, gọi editVehicle', async () => {
     await renderVehicle()
     fireEvent.click(screen.getAllByTitle('Chỉnh sửa')[0])
-    expect(screen.getByText('Cập nhật phương tiện', { selector: 'h3' })).toBeInTheDocument()
+    expect(screen.getByText('Sửa phương tiện', { selector: 'h3' })).toBeInTheDocument()
     const plate = screen.getByLabelText(/Biển số xe/) as HTMLInputElement
     expect(plate.value).toBe('29A-111')
     expect(plate.readOnly).toBe(true)
@@ -208,7 +210,7 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
     expect((screen.getByLabelText(/Màu sắc xe/) as HTMLInputElement).value).toBe('Trắng')
     expect((screen.getByLabelText(/Nhóm quản lý/) as HTMLSelectElement).value).toBe('c1')
     fireEvent.change(screen.getByLabelText(/Màu sắc xe/), { target: { value: 'Vàng' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thay đổi/ }))
     await settle()
     expect(api.editVehicle).toHaveBeenCalledWith({
       vehiIdno: '29A-111',
@@ -231,7 +233,7 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
     const row = screen.getByText('77X-999').closest('tr') as HTMLElement
     fireEvent.click(within(row).getByTitle('Chỉnh sửa'))
     expect((screen.getByLabelText(/Nhóm quản lý/) as HTMLSelectElement).value).toBe('')
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thay đổi/ }))
     await settle()
     expect(api.editVehicle).toHaveBeenCalledTimes(1)
     const sent = vi.mocked(api.editVehicle).mock.calls[0][0] as Record<string, string>
@@ -242,7 +244,7 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
   it('sửa xe không có đơn vị: vẫn gửi companyId rỗng; chọn đơn vị thì gửi giá trị đã chọn', async () => {
     await renderVehicle()
     fireEvent.click(screen.getAllByTitle('Chỉnh sửa')[2]) // 51C-333, không có đơn vị
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Lưu thay đổi/ }))
     await settle()
     expect(vi.mocked(api.editVehicle).mock.calls[0][0]).toMatchObject({ companyId: '' })
   })
@@ -250,9 +252,9 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
   it('mở lại form thêm sau khi sửa: biển số hết chỉ đọc và form được đặt lại', async () => {
     await renderVehicle()
     fireEvent.click(screen.getAllByTitle('Chỉnh sửa')[0])
-    fireEvent.click(screen.getByRole('button', { name: 'Hủy bỏ' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(document.getElementById('vehicle-modal')).toHaveStyle({ display: 'none' })
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     const plate = screen.getByLabelText(/Biển số xe/) as HTMLInputElement
     expect(plate.readOnly).toBe(false)
     expect(plate.value).toBe('')
@@ -261,10 +263,10 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
   it('API trả lỗi -> toast msg, modal giữ nguyên', async () => {
     vi.mocked(api.addVehicle).mockResolvedValue({ result: 1, msg: 'Trùng biển số' })
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'B' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(toasts()).toEqual([['error', 'Trùng biển số']])
     expect(document.getElementById('vehicle-modal')).toHaveStyle({ display: 'flex' })
@@ -274,10 +276,10 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
   it('API trả lỗi không có msg -> thông báo mặc định', async () => {
     vi.mocked(api.addVehicle).mockResolvedValue({ result: 1 })
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'B' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(toasts()).toEqual([['error', 'Có lỗi xảy ra khi lưu dữ liệu']])
   })
@@ -286,10 +288,10 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
     vi.mocked(api.addVehicle).mockRejectedValue(new Error('net'))
     vi.spyOn(console, 'error').mockImplementation(() => {})
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'B' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     expect(toasts()).toEqual([['error', 'Lỗi kết nối máy chủ']])
   })
@@ -298,17 +300,17 @@ describe('thêm / sửa phương tiện (handleSave)', () => {
     let resolve: (v: { result: number }) => void = () => {}
     vi.mocked(api.addVehicle).mockReturnValue(new Promise((r) => (resolve = r)))
     await renderVehicle()
-    fireEvent.click(screen.getByRole('button', { name: /Thêm xe mới/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Thêm phương tiện/ }))
     fireEvent.change(screen.getByLabelText(/Biển số xe/), { target: { value: 'A' } })
     fireEvent.change(screen.getByLabelText(/^ID thiết bị/), { target: { value: 'B' } })
-    fireEvent.click(screen.getByRole('button', { name: /Lưu thông tin/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Tạo phương tiện/ }))
     await settle()
     const btn = screen.getByRole('button', { name: /Đang lưu\.\.\./ })
     expect(btn).toBeDisabled()
     await act(async () => resolve({ result: 0 }))
     await settle()
     // modal đã đóng (aria-hidden) nên phải tìm cả phần tử ẩn
-    expect(screen.getByRole('button', { name: /Lưu thông tin/, hidden: true })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Tạo phương tiện/, hidden: true })).toBeEnabled()
   })
 })
 

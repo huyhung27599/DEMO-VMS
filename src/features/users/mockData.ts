@@ -1,5 +1,4 @@
 export type UserStatus = 'active' | 'inactive' | 'locked' | 'pending'
-export type Persona = 'super-admin' | 'enterprise-admin'
 
 export type MockUser = {
   id: string
@@ -23,11 +22,11 @@ export const ENTERPRISES = [
 ] as const
 
 export const ROLES = [
-  { id: 'role-super', name: 'Super Admin', superOnly: true, chip: 'super' },
-  { id: 'role-ent-admin', name: 'Quản trị doanh nghiệp', superOnly: false, chip: 'admin' },
-  { id: 'role-monitor', name: 'Giám sát viên', superOnly: false, chip: 'monitor' },
-  { id: 'role-ops', name: 'Vận hành', superOnly: false, chip: 'ops' },
-  { id: 'role-viewer', name: 'Chỉ xem', superOnly: false, chip: 'viewer' },
+  { id: 'role-super', name: 'Super Admin', chip: 'super' },
+  { id: 'role-ent-admin', name: 'Quản trị doanh nghiệp', chip: 'admin' },
+  { id: 'role-monitor', name: 'Giám sát viên', chip: 'monitor' },
+  { id: 'role-ops', name: 'Vận hành', chip: 'ops' },
+  { id: 'role-viewer', name: 'Chỉ xem', chip: 'viewer' },
 ] as const
 
 export type RoleChip = (typeof ROLES)[number]['chip']
@@ -109,5 +108,3 @@ export const MOCK_USERS: MockUser[] = [
     lastLoginAt: null,
   },
 ]
-
-export const DEMO_ENTERPRISE_ID = 'ent-pd'
