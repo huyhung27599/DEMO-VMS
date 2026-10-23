@@ -91,7 +91,7 @@ export function DriverSection({ hidden }: { hidden: boolean }) {
     const confirmed = await showDeleteDriverConfirm(args.name)
     if (!confirmed) return
     deleteMutation.mutate(args)
-    setDetailDriver((cur) => (cur && `${cur.id}` === args.id ? null : cur))
+    setDetailDriver((cur: Loose | null) => (cur && `${cur.id}` === args.id ? null : cur))
   }
 
   const onExport = () => {
