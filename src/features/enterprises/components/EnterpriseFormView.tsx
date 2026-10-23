@@ -8,13 +8,13 @@ import {
   validateUnitForm,
   type UnitFormValues,
 } from '../lib'
-import type { MockUnit, UnitType } from '../mockData'
+import type { Unit, UnitType } from '../types'
 
 type EnterpriseFormViewProps = {
   mode: 'create' | 'edit'
-  units: MockUnit[]
+  units: Unit[]
   initial: UnitFormValues
-  editStatus?: MockUnit['status']
+  editStatus?: Unit['status']
   editId?: string
   onCancel: () => void
   onSubmit: (values: UnitFormValues) => void
@@ -112,24 +112,24 @@ export function EnterpriseFormView({
               </label>
               <input
                 id="unit-code"
-                className={`${modalInputClass} ${mode === 'edit' ? 'bg-[#f8fafc] text-text-muted' : ''}`}
-                placeholder="VD: PD"
-                disabled={mode === 'edit'}
+                className={`${modalInputClass} bg-[#f8fafc] text-text-muted`}
+                placeholder="—"
+                disabled
                 value={values.code}
                 onChange={(e) => setValues((v) => ({ ...v, code: e.target.value }))}
               />
-              {mode === 'create' ? (
-                <p className={fieldHint}>Duy nhất toàn hệ thống. Chữ, số và (_ -).</p>
-              ) : null}
+              <p className={fieldHint}>808gps chưa hỗ trợ ghi mã đơn vị qua API.</p>
             </div>
             <div>
               <label htmlFor="unit-type" className={labelClass}>
                 Loại đơn vị
               </label>
+              {/* Loại suy ra từ đơn vị cha (808gps không có tham số loại) */}
               <select
                 id="unit-type"
                 className={modalInputClass}
-                value={values.type}
+                disabled
+                value={values.parentId ? 'branch' : values.type === 'department' ? 'department' : 'enterprise'}
                 onChange={(e) => setValues((v) => ({ ...v, type: e.target.value as UnitType }))}
               >
                 <option value="enterprise">Doanh nghiệp</option>
@@ -144,13 +144,14 @@ export function EnterpriseFormView({
               <select
                 id="unit-parent"
                 className={modalInputClass}
+                disabled={mode === 'edit'}
                 value={values.parentId}
                 onChange={(e) => setValues((v) => ({ ...v, parentId: e.target.value }))}
               >
                 <option value="">— Không (đơn vị gốc) —</option>
                 {parents.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.code})
+                    {p.code ? `${p.name} (${p.code})` : p.name}
                   </option>
                 ))}
               </select>
@@ -159,8 +160,43 @@ export function EnterpriseFormView({
           </div>
         </section>
 
+        {mode === 'create' ? (
+          <section className="mb-8">
+            <h3 className={sectionTitle}>Tài khoản quản trị đơn vị</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="unit-account" className={labelClass}>
+                  Tài khoản <span className="text-danger">*</span>
+                </label>
+                <input
+                  id="unit-account"
+                  className={modalInputClass}
+                  autoComplete="off"
+                  value={values.account}
+                  onChange={(e) => setValues((v) => ({ ...v, account: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="unit-password" className={labelClass}>
+                  Mật khẩu
+                </label>
+                <input
+                  id="unit-password"
+                  type="password"
+                  className={modalInputClass}
+                  autoComplete="new-password"
+                  value={values.password}
+                  onChange={(e) => setValues((v) => ({ ...v, password: e.target.value }))}
+                />
+                <p className={fieldHint}>Để trống: 808gps đặt mặc định 000000</p>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         <section className="mb-6">
           <h3 className={sectionTitle}>Thông tin liên hệ</h3>
+          <p className={`${fieldHint} -mt-1 mb-3`}>Chỉ xem — 808gps chưa hỗ trợ ghi các trường này qua API.</p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <label htmlFor="unit-address" className={labelClass}>
@@ -168,6 +204,7 @@ export function EnterpriseFormView({
               </label>
               <input
                 id="unit-address"
+                disabled
                 className={modalInputClass}
                 placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
                 value={values.address}
@@ -180,6 +217,7 @@ export function EnterpriseFormView({
               </label>
               <input
                 id="unit-rep"
+                disabled
                 className={modalInputClass}
                 placeholder="Họ và tên"
                 value={values.representative}
@@ -192,6 +230,7 @@ export function EnterpriseFormView({
               </label>
               <input
                 id="unit-phone"
+                disabled
                 className={modalInputClass}
                 placeholder="0901 234 567"
                 value={values.phone}
@@ -204,6 +243,7 @@ export function EnterpriseFormView({
               </label>
               <input
                 id="unit-email"
+                disabled
                 type="email"
                 className={modalInputClass}
                 placeholder="lienhe@doanhnghiep.vn"

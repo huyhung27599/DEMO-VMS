@@ -1,10 +1,10 @@
 import {
   UNIT_STATUS_LABEL,
   UNIT_TYPE_LABEL,
-  type MockUnit,
+  type Unit,
   type UnitStatus,
   type UnitType,
-} from './mockData'
+} from './types'
 
 export const PAGE_SIZE = 20
 
@@ -23,6 +23,9 @@ export type UnitFormValues = {
   representative: string
   phone: string
   email: string
+  /** Tài khoản chủ của đơn vị — mergeCompany bắt buộc khi tạo mới */
+  account: string
+  password: string
 }
 
 export const EMPTY_UNIT_FORM: UnitFormValues = {
@@ -34,6 +37,8 @@ export const EMPTY_UNIT_FORM: UnitFormValues = {
   representative: '',
   phone: '',
   email: '',
+  account: '',
+  password: '',
 }
 
 export function typeBadgeClass(type: UnitType): string {
@@ -59,17 +64,17 @@ export function typeLabel(type: UnitType): string {
   return UNIT_TYPE_LABEL[type]
 }
 
-export function childrenOf(units: MockUnit[], parentId: string | null): MockUnit[] {
+export function childrenOf(units: Unit[], parentId: string | null): Unit[] {
   return units.filter((u) => u.parentId === parentId)
 }
 
-export function hasChildren(units: MockUnit[], id: string): boolean {
+export function hasChildren(units: Unit[], id: string): boolean {
   return units.some((u) => u.parentId === id)
 }
 
 /** Collect id + all descendant ids (for cycle checks and delete guards). */
-export function descendantIds(units: MockUnit[], rootId: string): Set<string> {
-  const byParent = new Map<string | null, MockUnit[]>()
+export function descendantIds(units: Unit[], rootId: string): Set<string> {
+  const byParent = new Map<string | null, Unit[]>()
   for (const u of units) {
     const list = byParent.get(u.parentId) ?? []
     list.push(u)
@@ -88,13 +93,13 @@ export function descendantIds(units: MockUnit[], rootId: string): Set<string> {
   return out
 }
 
-export function canDeleteUnit(units: MockUnit[], unit: MockUnit): boolean {
+export function canDeleteUnit(units: Unit[], unit: Unit): boolean {
   if (hasChildren(units, unit.id)) return false
   if (unit.userCount > 0 || unit.deviceCount > 0 || unit.vehicleCount > 0) return false
   return true
 }
 
-export function filterUnits(units: MockUnit[], filters: UnitFilters): MockUnit[] {
+export function filterUnits(units: Unit[], filters: UnitFilters): Unit[] {
   const q = filters.search.trim().toLowerCase()
   return units.filter((u) => {
     if (filters.type && u.type !== filters.type) return false
@@ -109,10 +114,10 @@ export function filterUnits(units: MockUnit[], filters: UnitFilters): MockUnit[]
  * A node is shown if it matches filters OR has a matching descendant (so tree context stays).
  */
 export function buildVisibleTree(
-  units: MockUnit[],
+  units: Unit[],
   filters: UnitFilters,
   expanded: Set<string>,
-): Array<{ unit: MockUnit; depth: number; hasKids: boolean }> {
+): Array<{ unit: Unit; depth: number; hasKids: boolean }> {
   const matched = new Set(filterUnits(units, filters).map((u) => u.id))
   const keep = new Set<string>()
   for (const id of matched) {
@@ -124,7 +129,7 @@ export function buildVisibleTree(
     }
   }
 
-  const rows: Array<{ unit: MockUnit; depth: number; hasKids: boolean }> = []
+  const rows: Array<{ unit: Unit; depth: number; hasKids: boolean }> = []
 
   const walk = (parentId: string | null, depth: number) => {
     const kids = childrenOf(units, parentId).filter((u) => keep.has(u.id))
@@ -161,9 +166,9 @@ export function paginate<T>(items: T[], page: number, pageSize = PAGE_SIZE): {
 
 /** Active units eligible as parent (exclude self + descendants when editing). */
 export function parentOptions(
-  units: MockUnit[],
+  units: Unit[],
   opts?: { excludeId?: string },
-): MockUnit[] {
+): Unit[] {
   const blocked = opts?.excludeId ? descendantIds(units, opts.excludeId) : new Set<string>()
   if (opts?.excludeId) blocked.add(opts.excludeId)
   return units.filter((u) => u.status === 'active' && !blocked.has(u.id))
@@ -171,18 +176,19 @@ export function parentOptions(
 
 export function validateUnitForm(
   values: UnitFormValues,
-  units: MockUnit[],
+  units: Unit[],
   opts: { mode: 'create' | 'edit'; editId?: string },
 ): string | null {
   const name = values.name.trim()
   if (!name) return 'Vui lòng nhập tên đơn vị'
   if (name.length < 2 || name.length > 100) return 'Tên đơn vị phải từ 2–100 ký tự'
 
-  const code = values.code.trim()
+  // Mã đơn vị không ghi được qua mergeCompany → không bắt buộc; tài khoản chủ thì bắt buộc khi tạo
   if (opts.mode === 'create') {
-    if (!code) return 'Vui lòng nhập mã đơn vị'
-    if (!/^[a-zA-Z0-9._-]{1,50}$/.test(code)) return 'Mã đơn vị chỉ gồm chữ, số và (. _ -), không khoảng trắng'
-    if (units.some((u) => u.code.toLowerCase() === code.toLowerCase())) return 'Mã đơn vị đã tồn tại'
+    const account = values.account.trim()
+    if (!account) return 'Vui lòng nhập tài khoản quản trị đơn vị'
+    if (!/^[a-zA-Z0-9._-]{3,50}$/.test(account)) return 'Tài khoản chỉ gồm chữ, số và (. _ -), 3–50 ký tự'
+    if (values.password && values.password.length < 6) return 'Mật khẩu tối thiểu 6 ký tự'
   }
 
   const parentId = values.parentId || null
@@ -213,4 +219,47 @@ export function validateUnitForm(
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Email không đúng định dạng'
 
   return null
+}
+
+type Row = Record<string, unknown>
+
+/**
+ * findCompany.infos[] → Unit. level: 1 = công ty, 12 = phòng ban (doc 808gps).
+ * Đếm người dùng theo findUserAccount.infos[].pid, xe/thiết bị theo queryUserVehicle.vehicles[].pid.
+ * 808gps không có trạng thái khóa đơn vị → luôn 'active'.
+ */
+export function toUnits(companies: Row[], users: Row[], vehicles: Row[]): Unit[] {
+  const ids = new Set(companies.map((c) => String(c.id)))
+  const count = (rows: Row[], n: (r: Row) => number = () => 1) => {
+    const m: Record<string, number> = {}
+    rows.forEach((r) => {
+      const k = String(r.pid ?? '')
+      m[k] = (m[k] || 0) + n(r)
+    })
+    return m
+  }
+  const usersBy = count(users)
+  const vehiclesBy = count(vehicles)
+  const devicesBy = count(vehicles, (v) => (Array.isArray(v.dl) ? v.dl.length : v.dl ? 1 : 0))
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined)
+
+  return companies.map((c) => {
+    const id = String(c.id)
+    const parentId = ids.has(String(c.parentId)) ? String(c.parentId) : null
+    return {
+      id,
+      name: String(c.name ?? ''),
+      code: String(c.code ?? ''),
+      type: Number(c.level) === 12 ? 'department' : parentId ? 'branch' : 'enterprise',
+      parentId,
+      status: 'active',
+      userCount: usersBy[id] || 0,
+      deviceCount: devicesBy[id] || 0,
+      vehicleCount: vehiclesBy[id] || 0,
+      address: str(c.address),
+      representative: str(c.linkMan),
+      phone: str(c.linkPhone),
+      email: str(c.linkEmail),
+    }
+  })
 }

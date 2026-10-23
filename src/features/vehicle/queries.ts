@@ -61,7 +61,7 @@ export async function refresh(client: QueryClient): Promise<void> {
 
 export type CompanyNode = Company & { parentId: string | null }
 
-/** queryUserVehicle.companys[{id,nm,pid}] (đủ cả đơn vị chưa có xe); thiếu thì suy ra từ xe. */
+/** queryUserVehicle.companys[{id,nm,pId}] (đủ cả đơn vị chưa có xe); thiếu thì suy ra từ xe. */
 export function companiesFromVehicleResponse(res: Record<string, unknown> | null | undefined): CompanyNode[] {
   const raw = Array.isArray(res?.companys) ? (res.companys as Record<string, unknown>[]) : []
   if (raw.length) {
@@ -71,7 +71,8 @@ export function companiesFromVehicleResponse(res: Record<string, unknown> | null
       .map((c) => ({
         id: String(c.id),
         name: String(c.nm),
-        parentId: c.pid !== undefined && ids.has(String(c.pid)) ? String(c.pid) : null,
+        // 808gps trả `pId` (doc ghi `pid`)
+        parentId: ids.has(String(c.pId ?? c.pid)) ? String(c.pId ?? c.pid) : null,
       }))
   }
   const vehicles = Array.isArray(res?.vehicles) ? (res.vehicles as Vehicle[]).map(normalizeVehicle) : []

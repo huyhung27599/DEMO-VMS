@@ -1,48 +1,12 @@
 import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalBody, ModalFooter } from '../../../shared/ui/Modal'
-import type { MockUnit } from '../mockData'
+import type { Unit } from '../types'
 
 type BaseProps = {
   open: boolean
-  unit: MockUnit | null
+  unit: Unit | null
   onClose: () => void
   onConfirm: () => void
-}
-
-export function ConfirmDeactivateUnitModal({ open, unit, onClose, onConfirm }: BaseProps) {
-  return (
-    <Modal id="unit-deactivate-modal" open={open} onClose={onClose} labelledBy="unit-deactivate-title" maxWidth={460}>
-      <ModalBody>
-        <div className="flex items-start gap-3">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-800">
-            <i className="fa-solid fa-lock" aria-hidden="true" />
-          </div>
-          <div>
-            <h3 id="unit-deactivate-title" className="m-0 text-lg font-bold text-text-main">
-              Vô hiệu hóa đơn vị?
-            </h3>
-            <p className="mt-2 mb-0 text-[0.95rem] leading-relaxed text-[#475569]">
-              Đơn vị <strong className="text-text-main">{unit?.name}</strong> sẽ bị ẩn khỏi danh mục chọn mới. Dữ liệu
-              và các liên kết hiện có vẫn được giữ nguyên, có thể kích hoạt lại sau.
-            </p>
-          </div>
-        </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="outline" size="modal" onClick={onClose}>
-          Hủy
-        </Button>
-        <Button
-          variant="default"
-          size="modalWide"
-          className="bg-[#ea580c]! text-white! enabled:hover:bg-[#c2410c]!"
-          onClick={onConfirm}
-        >
-          Vô hiệu hóa
-        </Button>
-      </ModalFooter>
-    </Modal>
-  )
 }
 
 export function ConfirmDeleteUnitModal({ open, unit, onClose, onConfirm }: BaseProps) {

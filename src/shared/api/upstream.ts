@@ -50,3 +50,9 @@ export async function fetchUpstream(
     return { result: 99, msg: `Fetch exception: ${message}` }
   }
 }
+
+/** Thông điệp lỗi của 808gps (message / resultTip / msg) hoặc fallback. */
+export function upstreamError(res: ApiResponse | null | undefined, fallback: string): string {
+  const m = res?.message ?? res?.resultTip ?? res?.msg
+  return typeof m === 'string' && m.trim() ? m : `${fallback} (mã ${res?.result ?? '?'})`
+}

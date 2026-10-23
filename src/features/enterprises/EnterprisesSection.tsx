@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '../../shared/ui/Button'
 import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
-import {
-  ConfirmDeactivateUnitModal,
-  ConfirmDeleteUnitModal,
-} from './components/EnterpriseConfirmModals'
+import { ConfirmDeleteUnitModal } from './components/EnterpriseConfirmModals'
 import { EnterpriseFormView } from './components/EnterpriseFormView'
 import {
   buildVisibleTree,
@@ -19,19 +17,18 @@ import {
   type UnitFilters,
   type UnitFormValues,
 } from './lib'
-import { MOCK_UNITS, type MockUnit, type UnitStatus, type UnitType } from './mockData'
+import { unitsQueryOptions, useDeleteUnitMutation, useSaveUnitMutation } from './queries'
+import type { UnitStatus, UnitType } from './types'
 
 type View =
   | { mode: 'list' }
   | { mode: 'form'; formMode: 'create' | 'edit'; unitId?: string }
 
-type Dialog =
-  | { type: 'none' }
-  | { type: 'deactivate'; unitId: string }
-  | { type: 'delete'; unitId: string }
+type Dialog = { type: 'none' } | { type: 'delete'; unitId: string }
 
 export function EnterprisesSection({ hidden }: { hidden: boolean }) {
-  const [units, setUnits] = useState<MockUnit[]>(() => [...MOCK_UNITS])
+  const unitsQuery = useQuery({ ...unitsQueryOptions(), enabled: !hidden })
+  const units = useMemo(() => unitsQuery.data ?? [], [unitsQuery.data])
   const [view, setView] = useState<View>({ mode: 'list' })
   const [draftFilters, setDraftFilters] = useState<UnitFilters>({
     search: '',
@@ -39,7 +36,9 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
     status: '',
   })
   const [filters, setFilters] = useState<UnitFilters>(draftFilters)
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['u-pd', 'u-pd-hn']))
+  // Mặc định mở hết cây; chỉ lưu các nút người dùng thu gọn
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set())
+  const expanded = useMemo(() => new Set(units.map((u) => u.id).filter((id) => !collapsed.has(id))), [units, collapsed])
   const [page, setPage] = useState(1)
   const [dialog, setDialog] = useState<Dialog>({ type: 'none' })
 
@@ -54,7 +53,7 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
 
   const findUnit = (id: string) => units.find((u) => u.id === id) ?? null
   const dialogUnit =
-    dialog.type === 'deactivate' || dialog.type === 'delete' ? findUnit(dialog.unitId) : null
+    dialog.type === 'delete' ? findUnit(dialog.unitId) : null
 
   const formInitial: UnitFormValues = useMemo(() => {
     if (view.mode !== 'form') return EMPTY_UNIT_FORM
@@ -70,6 +69,8 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
         representative: u.representative ?? '',
         phone: u.phone ?? '',
         email: u.email ?? '',
+        account: '',
+        password: '',
       }
     }
     return EMPTY_UNIT_FORM
@@ -86,7 +87,7 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
   }
 
   const toggleExpand = (id: string) => {
-    setExpanded((prev) => {
+    setCollapsed((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -95,53 +96,12 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
   }
 
   const backToList = () => setView({ mode: 'list' })
+  const saveMutation = useSaveUnitMutation({ onSaved: backToList })
+  const deleteMutation = useDeleteUnitMutation({ onDeleted: () => setDialog({ type: 'none' }) })
 
   const onSaveUnit = (values: UnitFormValues) => {
-    if (view.mode !== 'form') return
-    if (view.formMode === 'create') {
-      const id = `u-${Date.now()}`
-      setUnits((list) => [
-        ...list,
-        {
-          id,
-          name: values.name,
-          code: values.code,
-          type: values.type,
-          parentId: values.parentId || null,
-          status: 'active',
-          userCount: 0,
-          deviceCount: 0,
-          vehicleCount: 0,
-          address: values.address || undefined,
-          representative: values.representative || undefined,
-          phone: values.phone || undefined,
-          email: values.email || undefined,
-        },
-      ])
-      if (values.parentId) {
-        setExpanded((prev) => new Set(prev).add(values.parentId))
-      }
-      showToast('Đã tạo đơn vị thành công', 'success')
-    } else if (view.unitId) {
-      setUnits((list) =>
-        list.map((u) =>
-          u.id === view.unitId
-            ? {
-                ...u,
-                name: values.name,
-                type: values.type,
-                parentId: values.parentId || null,
-                address: values.address || undefined,
-                representative: values.representative || undefined,
-                phone: values.phone || undefined,
-                email: values.email || undefined,
-              }
-            : u,
-        ),
-      )
-      showToast('Đã cập nhật đơn vị thành công', 'success')
-    }
-    backToList()
+    if (view.mode !== 'form' || saveMutation.isPending) return
+    saveMutation.mutate({ values, editId: view.formMode === 'edit' ? view.unitId : undefined })
   }
 
   return (
@@ -246,10 +206,14 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {unitsQuery.isPending || unitsQuery.isError || rows.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
-                      Không có đơn vị phù hợp bộ lọc
+                      {unitsQuery.isPending
+                        ? 'Đang tải dữ liệu...'
+                        : unitsQuery.isError
+                          ? unitsQuery.error.message
+                          : 'Không có đơn vị phù hợp bộ lọc'}
                     </td>
                   </tr>
                 ) : (
@@ -283,7 +247,7 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
                           <span className="font-semibold text-text-main">{unit.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 font-medium text-text-muted">{unit.code}</td>
+                      <td className="px-4 py-3.5 font-medium text-text-muted">{unit.code || '—'}</td>
                       <td className="px-4 py-3.5">
                         <span
                           className={`inline-flex rounded-md px-2 py-0.5 text-[0.7rem] font-semibold ring-1 ring-inset ${typeBadgeClass(unit.type)}`}
@@ -311,21 +275,12 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
                               setView({ mode: 'form', formMode: 'edit', unitId: unit.id })
                             }
                           />
+                          {/* 808gps không có API khóa/mở đơn vị */}
                           <IconBtn
-                            label={unit.status === 'inactive' ? 'Kích hoạt' : 'Vô hiệu hóa'}
-                            icon={unit.status === 'inactive' ? 'fa-lock-open' : 'fa-lock'}
-                            onClick={() => {
-                              if (unit.status === 'inactive') {
-                                setUnits((list) =>
-                                  list.map((x) =>
-                                    x.id === unit.id ? { ...x, status: 'active' } : x,
-                                  ),
-                                )
-                                showToast('Đã kích hoạt đơn vị', 'success')
-                              } else {
-                                setDialog({ type: 'deactivate', unitId: unit.id })
-                              }
-                            }}
+                            label="Vô hiệu hóa (chưa hỗ trợ trên 808gps)"
+                            icon="fa-lock"
+                            disabled
+                            onClick={() => {}}
                           />
                           <IconBtn
                             label="Xóa"
@@ -391,19 +346,6 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
         </>
       )}
 
-      <ConfirmDeactivateUnitModal
-        open={dialog.type === 'deactivate'}
-        unit={dialogUnit}
-        onClose={() => setDialog({ type: 'none' })}
-        onConfirm={() => {
-          if (dialog.type !== 'deactivate') return
-          setUnits((list) =>
-            list.map((u) => (u.id === dialog.unitId ? { ...u, status: 'inactive' } : u)),
-          )
-          showToast('Đã vô hiệu hóa đơn vị', 'success')
-          setDialog({ type: 'none' })
-        }}
-      />
       <ConfirmDeleteUnitModal
         open={dialog.type === 'delete'}
         unit={dialogUnit}
@@ -419,9 +361,7 @@ export function EnterprisesSection({ hidden }: { hidden: boolean }) {
             setDialog({ type: 'none' })
             return
           }
-          setUnits((list) => list.filter((u) => u.id !== dialog.unitId))
-          showToast('Đã xóa đơn vị', 'success')
-          setDialog({ type: 'none' })
+          if (!deleteMutation.isPending) deleteMutation.mutate(dialog.unitId)
         }}
       />
     </ContentSection>
@@ -433,11 +373,13 @@ function IconBtn({
   icon,
   onClick,
   danger,
+  disabled,
 }: {
   label: string
   icon: string
   onClick: () => void
   danger?: boolean
+  disabled?: boolean
 }) {
   return (
     <button
@@ -445,7 +387,8 @@ function IconBtn({
       title={label}
       aria-label={label}
       onClick={onClick}
-      className={`inline-flex size-8 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-sm ${
+      disabled={disabled}
+      className={`inline-flex size-8 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-md border-none bg-transparent text-sm ${
         danger
           ? 'text-[#94a3b8] hover:bg-danger/10 hover:text-danger'
           : 'text-[#94a3b8] hover:bg-slate-100 hover:text-text-main'
