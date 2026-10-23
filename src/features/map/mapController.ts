@@ -32,6 +32,8 @@ let markersLiveView: MarkerMap = {}
 let markersMain: MarkerMap = {}
 let lastValidStatuses: DeviceStatus[] = []
 let vehicleMapCache: Record<string, string> | null = null
+/** devId → tên doanh nghiệp (pnm) cho bộ lọc DN trên danh sách bản đồ */
+let vehicleCompanyCache: Record<string, string> = {}
 let markerAnims: Record<string, { rafId: number | null }> = {}
 const pendingTimers = new Set<ReturnType<typeof setTimeout>>()
 
@@ -157,10 +159,13 @@ export async function fetchOnce(): Promise<void> {
     if (vehicleRes && vehicleRes.result === 0 && Array.isArray(vehicleRes.vehicles)) {
       const cache: Record<string, string> = {}
       vehicleMapCache = cache
+      vehicleCompanyCache = {}
       ;(vehicleRes.vehicles as Array<Record<string, unknown>>).forEach((v) => {
         const dl = v.dl as Array<{ id?: string }> | undefined
         const devId = (dl && dl.length > 0 ? dl[0].id : v.id) as string | undefined
         if (devId) cache[devId] = (v.nm || v.vehiIdno || v.vehi_idno || v.plate) as string
+        const company = (v.pnm || v.companyName) as string | undefined
+        if (devId && company) vehicleCompanyCache[devId] = company
       })
     }
 
@@ -169,6 +174,7 @@ export async function fetchOnce(): Promise<void> {
       const validStatuses = (statusRes.status as DeviceStatus[]).map((s) => {
         const k = s.devIdno || s.id || s.DevIDNO
         if (k && vehicleMap[k]) s.vehicleName = vehicleMap[k]
+        if (k && vehicleCompanyCache[k]) s.company = vehicleCompanyCache[k]
         return s
       })
       lastValidStatuses = validStatuses
@@ -523,6 +529,7 @@ export function resetMapController(): void {
   markersMain = {}
   lastValidStatuses = []
   vehicleMapCache = null
+  vehicleCompanyCache = {}
   markerAnims = {}
   resetMapStore()
 }

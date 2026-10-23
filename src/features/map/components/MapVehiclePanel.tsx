@@ -8,7 +8,7 @@ import {
   type MapRowStatus,
 } from '../listHelpers'
 import { statusUid } from '../lib'
-import { MAP_COMPANY_OPTIONS, MAP_STATUS_OPTIONS } from '../mockData'
+import { MAP_STATUS_OPTIONS } from '../mockData'
 import { mapController } from '../mapController'
 import { useMapStore } from '../store'
 
@@ -36,6 +36,12 @@ export function MapVehiclePanel({ highlighted = false }: { highlighted?: boolean
   const deferredQ = useDeferredValue(listQuery)
 
   const counts = useMemo(() => countByStatus(statuses), [statuses])
+
+  // DN lấy từ company (pnm của xe, gắn trong mapController.fetchOnce)
+  const companyOptions = useMemo(
+    () => [...new Set(statuses.map((s) => String(s.company || '').trim()).filter(Boolean))].sort(),
+    [statuses],
+  )
 
   const rows = useMemo(() => {
     const term = deferredQ.trim().toLowerCase()
@@ -90,9 +96,10 @@ export function MapVehiclePanel({ highlighted = false }: { highlighted?: boolean
             aria-label="Doanh nghiệp"
             onChange={(e) => useMapStore.setState({ listCompany: e.target.value })}
           >
-            {MAP_COMPANY_OPTIONS.map((o) => (
-              <option key={o.value || 'all'} value={o.value}>
-                {o.label}
+            <option value="">Tất cả DN</option>
+            {companyOptions.map((name) => (
+              <option key={name} value={name.toLowerCase()}>
+                {name}
               </option>
             ))}
           </select>
