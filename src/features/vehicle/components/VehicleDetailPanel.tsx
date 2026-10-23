@@ -1,5 +1,5 @@
 import { extractDevId, getVehicleTypeLabel, type Vehicle } from '../lib'
-import { DEMO_VEHICLE_ALERTS, STATUS_LABEL, getDemoVehicleMeta } from '../mockData'
+import { EMPTY_META, STATUS_LABEL, type VehicleMeta } from '../meta'
 
 const LEVEL: Record<string, string> = {
   high: 'bg-[#fce8eb] text-[#e11d48]',
@@ -15,18 +15,19 @@ const LEVEL_LABEL: Record<string, string> = {
 
 type Props = {
   vehicle: Vehicle
+  metaByPlate: Record<string, VehicleMeta>
   onBack: () => void
   onEdit: () => void
   onDelete: () => void
 }
 
-/** Chi tiết phương tiện — UI mockup; cảnh báo / tốc độ demo khi chưa có API. */
-export function VehicleDetailPanel({ vehicle, onBack, onEdit, onDelete }: Props) {
+/** Chi tiết phương tiện — trạng thái/tốc độ/km/cảnh báo từ API thật (meta.ts). */
+export function VehicleDetailPanel({ vehicle, metaByPlate, onBack, onEdit, onDelete }: Props) {
   const plate = String(vehicle.plate || vehicle.nm || vehicle.vehiIdno || '—')
   const typeLabel = getVehicleTypeLabel(vehicle.vehiType)
   const company = String(vehicle.companyName || vehicle.pnm || '—')
   const device = extractDevId(vehicle)
-  const meta = getDemoVehicleMeta(plate)
+  const meta = metaByPlate[plate.trim()] ?? EMPTY_META
   const statusDot =
     meta.status === 'online' ? 'bg-[#22c55e]' : meta.status === 'alert' ? 'bg-[#e11d48]' : 'bg-[#94a3b8]'
 
@@ -96,8 +97,8 @@ export function VehicleDetailPanel({ vehicle, onBack, onEdit, onDelete }: Props)
               ['Doanh nghiệp', company],
               ['Tài xế phụ trách', meta.driver || 'Chưa gán'],
               ['Loại xe', typeLabel],
-              ['Tốc độ hiện tại', `${meta.speed} km/h`],
-              ['Quãng đường hôm nay', `${meta.todayKm} km`],
+              ['Tốc độ hiện tại', meta.speed === null ? '—' : `${meta.speed} km/h`],
+              ['Quãng đường hôm nay', meta.todayKm === null ? '—' : `${meta.todayKm} km`],
               ['Thiết bị', device],
             ].map(([k, v]) => (
               <div key={k}>
@@ -124,8 +125,15 @@ export function VehicleDetailPanel({ vehicle, onBack, onEdit, onDelete }: Props)
               </tr>
             </thead>
             <tbody>
-              {DEMO_VEHICLE_ALERTS.map((a) => (
-                <tr key={a.time + a.type} className="[&>td]:border-b [&>td]:border-[#f1f5f9] [&>td]:px-4 [&>td]:py-3 [&>td]:text-[0.85rem]">
+              {meta.alerts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-[0.85rem] text-[#94a3b8]">
+                    Không có cảnh báo
+                  </td>
+                </tr>
+              ) : null}
+              {meta.alerts.map((a, i) => (
+                <tr key={`${a.time}-${a.type}-${i}`} className="[&>td]:border-b [&>td]:border-[#f1f5f9] [&>td]:px-4 [&>td]:py-3 [&>td]:text-[0.85rem]">
                   <td className="tabular-nums text-[#64748b]">{a.time}</td>
                   <td className="font-semibold text-[#0f172a]">{a.type}</td>
                   <td>{a.driver}</td>

@@ -18,7 +18,7 @@ import {
   type Vehicle,
   type VehicleFormValues,
 } from './lib'
-import { PAGE_SIZE, getDemoVehicleMeta, type VehicleStatus } from './mockData'
+import { EMPTY_META, PAGE_SIZE, vehicleMetaQueryOptions, type VehicleStatus } from './meta'
 import { useDeleteVehicleMutation, useSaveVehicleMutation } from './mutations'
 import { companiesQueryOptions, refresh, vehiclesQueryOptions } from './queries'
 import { useVehicleStore } from './store'
@@ -48,6 +48,8 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
   const vehicles = vehiclesQuery.data
   const companies = useMemo(() => companiesQuery.data ?? [], [companiesQuery.data])
   const lastUpdate = useVehicleStore((s) => s.lastUpdate)
+  const metaQuery = useQuery(vehicleMetaQueryOptions(vehicles))
+  const metaByPlate = useMemo(() => metaQuery.data ?? {}, [metaQuery.data])
 
   // vehicle.js:29-31 (init, lần đầu hiển thị app khi hash là #vehicle) + 69-73 (hashchange sang #vehicle)
   useEffect(() => {
@@ -75,20 +77,21 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
   const filtered = useMemo(() => {
     if (!vehicles) return undefined
     const q = searchTerm.toLowerCase().trim()
-    // Giữ hành vi gốc filterVehicles; mở rộng thêm tài xế (demo UI)
+    // Giữ hành vi gốc filterVehicles; mở rộng thêm tài xế + trạng thái (dữ liệu thật)
     const base = q ? filterVehicles(vehicles, searchTerm) : vehicles
     const baseIds = new Set(base.map((v) => v.vehiIdno || v.nm || ''))
     return vehicles.filter((v) => {
       const key = v.vehiIdno || v.nm || ''
       const plate = String(v.plate || v.nm || v.vehiIdno || '')
-      const driver = (getDemoVehicleMeta(plate).driver || '').toLowerCase()
+      const meta = metaByPlate[plate.trim()] ?? EMPTY_META
+      const driver = (meta.driver || '').toLowerCase()
       const matchSearch = !q || baseIds.has(key) || driver.includes(q)
       if (!matchSearch) return false
       if (enterpriseId && (v.companyId || v.pid || '') !== enterpriseId) return false
-      if (statusFilter && getDemoVehicleMeta(plate).status !== statusFilter) return false
+      if (statusFilter && meta.status !== statusFilter) return false
       return true
     })
-  }, [vehicles, searchTerm, enterpriseId, statusFilter])
+  }, [vehicles, searchTerm, enterpriseId, statusFilter, metaByPlate])
 
   const paged = useMemo(
     () => (filtered ? paginateVehicles(filtered, page, PAGE_SIZE) : null),
@@ -175,6 +178,7 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-8 py-6 max-[768px]:px-4">
           <VehicleDetailPanel
             vehicle={detailVehicle}
+            metaByPlate={metaByPlate}
             onBack={() => setDetailPlate(null)}
             onEdit={() => openModal(plate)}
             onDelete={() => setDel({ open: true, plate })}
@@ -275,6 +279,7 @@ export function VehicleSection({ hidden }: { hidden: boolean }) {
 
           <VehicleTable
             vehicles={paged?.rows}
+            metaByPlate={metaByPlate}
             loading={vehiclesQuery.isFetching || !filtered}
             onDetail={setDetailPlate}
             onEdit={openModal}

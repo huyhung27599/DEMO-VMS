@@ -1,5 +1,5 @@
 import { extractDevId, getVehicleTypeLabel, type Vehicle } from '../lib'
-import { STATUS_LABEL, getDemoVehicleMeta } from '../mockData'
+import { EMPTY_META, STATUS_LABEL, type VehicleMeta } from '../meta'
 
 const TH =
   'border-b border-[#eef2f6] bg-[#f8fafc] px-4 py-3 text-left text-[0.68rem] font-bold tracking-[0.06em] text-[#94a3b8] uppercase'
@@ -9,13 +9,14 @@ const ICON_BTN =
 
 type VehicleTableProps = {
   vehicles: Vehicle[] | undefined
+  metaByPlate: Record<string, VehicleMeta>
   loading: boolean
   onDetail: (plate: string) => void
   onEdit: (plate: string) => void
   onDelete: (plate: string) => void
 }
 
-export function VehicleTable({ vehicles, loading, onDetail, onEdit, onDelete }: VehicleTableProps) {
+export function VehicleTable({ vehicles, metaByPlate, loading, onDetail, onEdit, onDelete }: VehicleTableProps) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
@@ -50,14 +51,14 @@ export function VehicleTable({ vehicles, loading, onDetail, onEdit, onDelete }: 
               const id = v.vehiIdno || v.nm || ''
               const plate = v.plate || v.nm || v.vehiIdno || '--'
               const device = extractDevId(v)
-              const meta = getDemoVehicleMeta(String(plate))
+              const meta = metaByPlate[String(plate).trim()] ?? EMPTY_META
               const statusDot =
                 meta.status === 'online'
                   ? 'bg-[#22c55e]'
                   : meta.status === 'alert'
                     ? 'bg-[#e11d48]'
                     : 'bg-[#94a3b8]'
-              const speedHot = meta.status === 'alert' && meta.speed > 55
+              const speedHot = meta.status === 'alert' && (meta.speed ?? 0) > 55
 
               return (
                 <tr key={`${id}-${i}`} className="transition-colors duration-200 hover:bg-[#fafbfc]">
@@ -82,9 +83,9 @@ export function VehicleTable({ vehicles, loading, onDetail, onEdit, onDelete }: 
                     </span>
                   </td>
                   <td className={`${TD} tabular-nums ${speedHot ? 'font-bold text-[#d97706]' : ''}`}>
-                    {meta.speed} km/h
+                    {meta.speed === null ? '—' : `${meta.speed} km/h`}
                   </td>
-                  <td className={`${TD} tabular-nums`}>{meta.todayKm} km</td>
+                  <td className={`${TD} tabular-nums`}>{meta.todayKm === null ? '—' : `${meta.todayKm} km`}</td>
                   <td className={TD}>
                     {meta.alertCount > 0 ? (
                       <span className="inline-flex rounded-lg border border-[#fecaca] bg-[#fff1f2] px-2 py-0.5 text-[0.75rem] font-semibold text-[#e11d48]">

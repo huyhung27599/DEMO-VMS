@@ -5,7 +5,8 @@ import { Button } from '../../../shared/ui/Button'
 import { Modal, ModalFooter } from '../../../shared/ui/Modal'
 import { showToast } from '../../../shared/ui/toastStore'
 import { EMPTY_VEHICLE_FORM, type Company, type VehicleFormValues } from '../lib'
-import { DEMO_DRIVERS } from '../mockData'
+import { useQuery } from '@tanstack/react-query'
+import { driversQueryOptions } from '../../driver/queries'
 import { vehicleFormSchema, VEHICLE_REQUIRED_MESSAGE } from '../schemas'
 
 const INPUT =
@@ -44,6 +45,7 @@ export function VehicleFormModal({
   onClose,
   onSave,
 }: VehicleFormModalProps) {
+  const drivers = useQuery({ ...driversQueryOptions(), enabled: open }).data ?? []
   const { register, handleSubmit, reset } = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleFormSchema),
     defaultValues: EMPTY_VEHICLE_FORM,
@@ -143,9 +145,9 @@ export function VehicleFormModal({
             </label>
             <select id="vehicle-driver" className={INPUT} defaultValue="" aria-label="Tài xế phụ trách">
               <option value="">— Chưa gán —</option>
-              {DEMO_DRIVERS.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
+              {drivers.map((d, i) => (
+                <option key={String(d.id ?? d.jn ?? i)} value={String(d.id ?? d.jn ?? '')}>
+                  {String(d.dn || d.name || d.jn || '')}
                 </option>
               ))}
             </select>
