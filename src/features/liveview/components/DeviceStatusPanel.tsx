@@ -1,5 +1,6 @@
 import { MapContainer } from '../../map/MapContainer'
-import { DEMO_DEVICE_STATUS, DEMO_GPS_ADDRESS } from '../mockData'
+import { useQuery } from '@tanstack/react-query'
+import { liveDeviceStatusQueryOptions, toDeviceStatusItems } from '../deviceStatus'
 import { onRightTabClick } from '../actions'
 import { useLiveviewStore } from '../store'
 import { AiEventsPanel } from './AiEventsPanel'
@@ -12,13 +13,16 @@ const TONE_DOT = {
 
 export function DeviceStatusPanel() {
   const rightTab = useLiveviewStore((s) => s.rightTab)
+  const deviceId = useLiveviewStore((s) => (s.grid.kind === 'player' ? s.grid.deviceId : ''))
+  const status = useQuery(liveDeviceStatusQueryOptions(deviceId)).data
+  const items = status?.items ?? toDeviceStatusItems(null, null)
 
   return (
     <aside className="flex h-full min-h-0 w-[280px] shrink-0 flex-col gap-3 overflow-hidden max-[1100px]:w-full max-[1100px]:flex-row max-[1100px]:overflow-x-auto">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#eef2f6] bg-white p-4 shadow-sm max-[1100px]:min-w-[260px]">
         <h3 className="m-0 mb-3 text-[0.85rem] font-bold text-[#0f172a]">Trạng thái thiết bị</h3>
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
-          {DEMO_DEVICE_STATUS.map((item) => (
+          {items.map((item) => (
             <li key={item.id} className="flex items-center gap-3 rounded-xl bg-[#f8fafc] px-3 py-2.5">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#64748b] shadow-sm">
                 <i className={`fa-solid ${item.icon}`} aria-hidden />
@@ -74,7 +78,7 @@ export function DeviceStatusPanel() {
           </div>
           <p className="m-0 truncate px-4 py-3 text-[0.8rem] font-medium text-[#64748b]">
             <i className="fa-solid fa-location-dot mr-1.5 text-[#e11d48]" aria-hidden />
-            {DEMO_GPS_ADDRESS}
+            {status?.address || '—'}
           </p>
         </div>
 
