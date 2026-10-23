@@ -19,12 +19,14 @@ function setRangeFromDates(from: string, to: string): void {
   })
 }
 
-/** Bộ lọc mockup + giữ DateFilter (preset / tùy chọn / apply) và refresh. */
+/** Bộ lọc DN / xe (dữ liệu thật) + giữ DateFilter (preset / tùy chọn / apply) và refresh. */
 export function ReportFilterBar() {
   const enterprise = useStatisticsStore((s) => s.reportEnterprise)
   const vehicle = useStatisticsStore((s) => s.reportVehicle)
   const startValue = useStatisticsStore((s) => s.customStartInput)
   const endValue = useStatisticsStore((s) => s.customEndInput)
+  const options = useStatisticsStore((s) => s.reportOptions)
+  const vehicles = (options?.vehicles ?? []).filter((v) => !enterprise || v.companyId === enterprise)
 
   function onViewReport() {
     if (startValue && endValue) {
@@ -45,11 +47,14 @@ export function ReportFilterBar() {
             id="stat-report-enterprise"
             className={SELECT}
             value={enterprise}
-            onChange={(e) => useStatisticsStore.setState({ reportEnterprise: e.target.value })}
+            onChange={(e) => useStatisticsStore.setState({ reportEnterprise: e.target.value, reportVehicle: '' })}
           >
             <option value="">Tất cả doanh nghiệp</option>
-            <option value="geic">GEIC</option>
-            <option value="gtel">Gtel</option>
+            {(options?.companies ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex min-w-[160px] flex-1 flex-col gap-1">
@@ -63,8 +68,11 @@ export function ReportFilterBar() {
             onChange={(e) => useStatisticsStore.setState({ reportVehicle: e.target.value })}
           >
             <option value="">Tất cả phương tiện</option>
-            <option value="30M-81775">30M-81775</option>
-            <option value="43C-11882">43C-11882</option>
+            {vehicles.map((v) => (
+              <option key={v.plate} value={v.plate}>
+                {v.plate}
+              </option>
+            ))}
           </select>
         </div>
         <div className="flex min-w-[260px] flex-[1.2] items-center gap-2">

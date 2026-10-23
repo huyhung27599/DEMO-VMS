@@ -89,7 +89,8 @@ describe('StatisticsSection', () => {
     await loaded()
     expect(m.vehicles).toHaveBeenCalledTimes(1)
     expect(m.alarm).toHaveBeenCalledTimes(1)
-    expect(m.mileage).toHaveBeenCalledTimes(2)
+    // loadStatistics gọi runMileage với datetime; báo cáo "Hành trình" (reports.ts) gọi với ngày (YYYY-MM-DD)
+    expect(m.mileage.mock.calls.filter((c) => String(c[1]).length > 10)).toHaveLength(2)
   })
 
   it('KPI, bảng, xếp hạng (mặc định "Ít lỗi nhất") sau khi tải', async () => {

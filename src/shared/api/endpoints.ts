@@ -811,6 +811,23 @@ export async function deleteDevice(devIdno: string): Promise<ApiResponse> {
   return fetchUpstream("StandardApiAction_deleteDevice.action", { devIdno });
 }
 
+export async function parkDetail(
+  vehiIdno: string,
+  begintime: string,
+  endtime: string,
+  parkTime: number = 0,
+): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_parkDetail.action", {
+    vehiIdno,
+    begintime,
+    endtime,
+    parkTime,
+    toMap: 2,
+    currentPage: 1,
+    pageRecords: 200,
+  });
+}
+
 export async function loadSIMInfos(params: Params = {}): Promise<ApiResponse> {
   return fetchUpstream("StandardApiAction_loadSIMInfos.action", params);
 }
@@ -896,4 +913,5 @@ export const api = {
   addDevice,
   deleteDevice,
   loadSIMInfos,
+  parkDetail,
 };

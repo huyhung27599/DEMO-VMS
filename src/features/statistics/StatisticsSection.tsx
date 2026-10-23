@@ -8,7 +8,7 @@ import { ChartsGrid } from './components/ChartsGrid'
 import { EventModal } from './components/EventModal'
 import { EventsTable } from './components/EventsTable'
 import { KpiGrid } from './components/KpiGrid'
-import { MockReportTable } from './components/MockReportTable'
+import { ReportTable } from './components/ReportTable'
 import { ReportFilterBar } from './components/ReportFilterBar'
 import { ReportTypeCards } from './components/ReportTypeCards'
 import { initStatistics, onExportClick } from './loaders'
@@ -72,9 +72,9 @@ export function StatisticsSection({ hidden }: { hidden: boolean }) {
         <ReportTypeCards />
         <ReportFilterBar />
 
-        {showAi ? null : <MockReportTable type={reportType} />}
+        {showAi ? null : <ReportTable type={reportType} />}
 
-        {/* KPI / charts / events luôn mount — logic + test; ẩn khi xem báo cáo demo khác */}
+        {/* KPI / charts / events luôn mount — logic + test; ẩn khi xem loại báo cáo khác */}
         <div className={showAi ? 'flex flex-col gap-4' : 'sr-only'}>
           <KpiGrid />
           <ChartsGrid trendRef={trendRef} pieRef={pieRef} barRef={barRef} />

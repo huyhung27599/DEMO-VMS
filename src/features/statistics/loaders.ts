@@ -20,6 +20,7 @@ import {
   type AnyRow,
 } from './lib'
 import { useStatisticsStore, type DateBtn } from './store'
+import { buildReportOptions } from './reports'
 
 // Port events.js: init, loadStatistics và các handler. Biến module nằm trong useStatisticsStore,
 // đọc/ghi đúng thời điểm như bản gốc (vd. allEvents ghi trước fetchMileageStats, updateCharts đọc
@@ -106,6 +107,7 @@ export async function loadStatistics(): Promise<void> {
     const vehicles: AnyRow[] =
       vehicleData && vehicleData.result === 0 && Array.isArray(vehicleData.vehicles) ? vehicleData.vehicles : []
     const vehiclesCount = vehicles.length
+    set({ reportOptions: buildReportOptions(vehicleData) })
     const vehicleMap: Record<string, string> = {}
     vehicles.forEach((v) => {
       const name = v.nm || v.vehiIdno || v.id || 'N/A'

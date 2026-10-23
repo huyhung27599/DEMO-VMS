@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { ReportOptions } from './reports'
 import type { AnyRow } from './lib'
 import type { ReportTypeId } from './mockData'
 
@@ -56,6 +57,8 @@ type StatisticsState = {
   reportType: ReportTypeId
   reportEnterprise: string
   reportVehicle: string
+  /** DN / xe cho bộ lọc báo cáo — ghi từ queryUserVehicle trong loadStatistics */
+  reportOptions: ReportOptions | null
 }
 
 const initialState = (): StatisticsState => ({
@@ -88,6 +91,7 @@ const initialState = (): StatisticsState => ({
   reportType: 'trips',
   reportEnterprise: '',
   reportVehicle: '',
+  reportOptions: null,
 })
 
 export const useStatisticsStore = create<StatisticsState>(initialState)

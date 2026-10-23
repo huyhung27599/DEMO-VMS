@@ -93,6 +93,7 @@ const UPSTREAM_KEYS = [
   'addDevice',
   'deleteDevice',
   'loadSIMInfos',
+  'parkDetail',
 ]
 
 type Case = [string, () => Promise<unknown>, string, Record<string, unknown> | undefined, string?]
@@ -535,6 +536,12 @@ describe('808gps direct endpoints call fetchUpstream', () => {
     ['addDevice', () => api.addDevice({ devIdno: 'd' }), 'StandardApiAction_addDevice.action', { devIdno: 'd' }],
     ['deleteDevice', () => api.deleteDevice('d'), 'StandardApiAction_deleteDevice.action', { devIdno: 'd' }],
     ['loadSIMInfos', () => api.loadSIMInfos(), 'StandardApiAction_loadSIMInfos.action', {}],
+    [
+      'parkDetail',
+      () => api.parkDetail('v', 'b', 'e'),
+      'StandardApiAction_parkDetail.action',
+      { vehiIdno: 'v', begintime: 'b', endtime: 'e', parkTime: 0, toMap: 2, currentPage: 1, pageRecords: 200 },
+    ],
   ])('%s', async (_n, call, action, params) => {
     up.mockClear()
     await call()
