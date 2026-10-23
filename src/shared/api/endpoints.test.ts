@@ -4,9 +4,11 @@ vi.mock('./client', async (orig) => {
   const actual = await orig<typeof import('./client')>()
   return { ...actual, fetchApi: vi.fn(async () => ({ result: 0 })) }
 })
+vi.mock('./upstream', () => ({ fetchUpstream: vi.fn(async () => ({ result: 0 })) }))
 
 import { fetchApi } from './client'
 import { api } from './endpoints'
+import { fetchUpstream } from './upstream'
 
 const mocked = vi.mocked(fetchApi)
 
@@ -76,6 +78,21 @@ const ORIGINAL_KEYS = [
   'editVehicle',
   'installVehicle',
   'uninstallDevice',
+]
+
+const UPSTREAM_KEYS = [
+  'findCompany',
+  'mergeCompany',
+  'deleteCompany',
+  'findUserAccount',
+  'mergeUserAccount',
+  'deleteUserAccount',
+  'findUserRole',
+  'mergeUserRole',
+  'deleteUserRole',
+  'addDevice',
+  'deleteDevice',
+  'loadSIMInfos',
 ]
 
 type Case = [string, () => Promise<unknown>, string, Record<string, unknown> | undefined, string?]
@@ -469,6 +486,13 @@ const cases: Case[] = [
     { devIdno: 'd' },
     'POST',
   ],
+  [
+    'uninstallDevice vehiIdno',
+    () => api.uninstallDevice('d', 'v'),
+    'StandardApiAction_uninstallDevice.action',
+    { devIdno: 'd', vehiIdno: 'v' },
+    'POST',
+  ],
 ]
 
 beforeEach(() => {
@@ -478,7 +502,7 @@ beforeEach(() => {
 
 describe('api surface', () => {
   it('has exactly the keys of the original return block', () => {
-    expect(Object.keys(api).sort()).toEqual([...ORIGINAL_KEYS].sort())
+    expect(Object.keys(api).sort()).toEqual([...ORIGINAL_KEYS, ...UPSTREAM_KEYS].sort())
   })
   it('does not expose getSecurityContext', () => {
     expect('getSecurityContext' in api).toBe(false)
@@ -493,6 +517,29 @@ describe('api endpoints call fetchApi like the original', () => {
     expect(args[0]).toBe(action)
     expect(args[1]).toEqual(params)
     expect(args[2]).toBe(method)
+  })
+})
+
+describe('808gps direct endpoints call fetchUpstream', () => {
+  const up = vi.mocked(fetchUpstream)
+  it.each<[string, () => Promise<unknown>, string, Record<string, unknown>]>([
+    ['findCompany', () => api.findCompany({ id: 1 }), 'StandardApiAction_findCompany.action', { id: 1 }],
+    ['mergeCompany', () => api.mergeCompany({ name: 'n' }), 'StandardApiAction_mergeCompany.action', { name: 'n' }],
+    ['deleteCompany', () => api.deleteCompany(1), 'StandardApiAction_deleteCompany.action', { id: 1 }],
+    ['findUserAccount', () => api.findUserAccount(), 'StandardApiAction_findUserAccount.action', {}],
+    ['mergeUserAccount', () => api.mergeUserAccount({ account: 'a' }), 'StandardApiAction_mergeUserAccount.action', { account: 'a' }],
+    ['deleteUserAccount', () => api.deleteUserAccount(2), 'StandardApiAction_deleteUserAccount.action', { id: 2 }],
+    ['findUserRole', () => api.findUserRole(), 'StandardApiAction_findUserRole.action', {}],
+    ['mergeUserRole', () => api.mergeUserRole({ name: 'r' }), 'StandardApiAction_mergeUserRole.action', { name: 'r' }],
+    ['deleteUserRole', () => api.deleteUserRole(3), 'StandardApiAction_deleteUserRole.action', { id: 3 }],
+    ['addDevice', () => api.addDevice({ devIdno: 'd' }), 'StandardApiAction_addDevice.action', { devIdno: 'd' }],
+    ['deleteDevice', () => api.deleteDevice('d'), 'StandardApiAction_deleteDevice.action', { devIdno: 'd' }],
+    ['loadSIMInfos', () => api.loadSIMInfos(), 'StandardApiAction_loadSIMInfos.action', {}],
+  ])('%s', async (_n, call, action, params) => {
+    up.mockClear()
+    await call()
+    expect(up).toHaveBeenCalledWith(action, params)
+    expect(mocked).not.toHaveBeenCalled()
   })
 })
 

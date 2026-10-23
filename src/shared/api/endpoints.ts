@@ -5,6 +5,7 @@ import {
   refreshCsrfToken,
 } from "./client";
 import type { ApiResponse } from "./client";
+import { fetchUpstream } from "./upstream";
 
 type Params = Record<string, unknown>;
 type Id = string | number;
@@ -753,12 +754,65 @@ export async function installVehicle(data: Params): Promise<ApiResponse> {
   return fetchApi("StandardApiAction_installVehicle.action", data, "POST");
 }
 
-export async function uninstallDevice(devIdno: string): Promise<ApiResponse> {
+export async function uninstallDevice(
+  devIdno: string,
+  vehiIdno?: string,
+): Promise<ApiResponse> {
   return fetchApi(
     "StandardApiAction_uninstallDevice.action",
-    { devIdno },
+    vehiIdno ? { devIdno, vehiIdno } : { devIdno },
     "POST",
   );
+}
+
+// ─── Gọi thẳng 808gps (backend :4000 chưa có route) ─────
+// Doc: http://119.17.211.170:8080/808gps/open/webApi.html
+export async function findCompany(params: Params = {}): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_findCompany.action", params);
+}
+
+export async function mergeCompany(params: Params): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_mergeCompany.action", params);
+}
+
+export async function deleteCompany(id: Id): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_deleteCompany.action", { id });
+}
+
+export async function findUserAccount(params: Params = {}): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_findUserAccount.action", params);
+}
+
+export async function mergeUserAccount(params: Params): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_mergeUserAccount.action", params);
+}
+
+export async function deleteUserAccount(id: Id): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_deleteUserAccount.action", { id });
+}
+
+export async function findUserRole(params: Params = {}): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_findUserRole.action", params);
+}
+
+export async function mergeUserRole(params: Params): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_mergeUserRole.action", params);
+}
+
+export async function deleteUserRole(id: Id): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_deleteUserRole.action", { id });
+}
+
+export async function addDevice(params: Params): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_addDevice.action", params);
+}
+
+export async function deleteDevice(devIdno: string): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_deleteDevice.action", { devIdno });
+}
+
+export async function loadSIMInfos(params: Params = {}): Promise<ApiResponse> {
+  return fetchUpstream("StandardApiAction_loadSIMInfos.action", params);
 }
 
 export const api = {
@@ -829,4 +883,17 @@ export const api = {
   editVehicle,
   installVehicle,
   uninstallDevice,
+  // 808gps trực tiếp
+  findCompany,
+  mergeCompany,
+  deleteCompany,
+  findUserAccount,
+  mergeUserAccount,
+  deleteUserAccount,
+  findUserRole,
+  mergeUserRole,
+  deleteUserRole,
+  addDevice,
+  deleteDevice,
+  loadSIMInfos,
 };
