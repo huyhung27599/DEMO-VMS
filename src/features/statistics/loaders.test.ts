@@ -32,6 +32,11 @@ beforeEach(() => {
 })
 
 describe('fetchMileageStats', () => {
+  it('đọc infos[].mile (mét) theo phản hồi thật của 808gps', async () => {
+    m.runMileage.mockResolvedValue({ result: 0, infos: [{ mile: 12500 }, { mile: 2500 }] })
+    expect((await fetchMileageStats([{ vehiIdno: 'A' }], start, end)).totalKm).toBe(15)
+  })
+
   it('trả { totalKm: 0, kmPer100: 0 } khi không có xe, không gọi API', async () => {
     expect(await fetchMileageStats([], start, end)).toEqual({ totalKm: 0, kmPer100: 0 })
     expect(m.runMileage).not.toHaveBeenCalled()

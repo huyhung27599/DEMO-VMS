@@ -20,7 +20,7 @@ import {
   type AnyRow,
 } from './lib'
 import { useStatisticsStore, type DateBtn } from './store'
-import { buildReportOptions } from './reports'
+import { buildReportOptions, mileKm } from './reports'
 
 // Port events.js: init, loadStatistics và các handler. Biến module nằm trong useStatisticsStore,
 // đọc/ghi đúng thời điểm như bản gốc (vd. allEvents ghi trước fetchMileageStats, updateCharts đọc
@@ -76,8 +76,10 @@ export async function fetchMileageStats(
       if (!vehiIdno) continue
       try {
         const res = await api.runMileage(vehiIdno, beginStr, endStr)
-        if (res && res.result === 0 && Array.isArray(res.datas)) {
-          totalKm += res.datas.reduce((s: number, d: AnyRow) => s + (parseFloat(d.mileage || 0) || 0), 0)
+        // 808gps trả infos[].mile (mét); giữ datas[].mileage (km) cho định dạng cũ
+        const rows = Array.isArray(res?.infos) ? res.infos : Array.isArray(res?.datas) ? res.datas : null
+        if (res && res.result === 0 && rows) {
+          totalKm += rows.reduce((s: number, d: AnyRow) => s + mileKm(d), 0)
         }
       } catch {
         /* bỏ qua như bản gốc */
