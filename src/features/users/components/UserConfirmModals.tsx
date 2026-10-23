@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Button } from '../../../shared/ui/Button'
-import { Modal, ModalBody, ModalFooter } from '../../../shared/ui/Modal'
+import { Modal, ModalBody, ModalFooter, modalInputClass } from '../../../shared/ui/Modal'
 import { initials } from '../lib'
 import type { User } from '../types'
 
@@ -114,9 +114,31 @@ export function ConfirmDeleteModal({ open, user, onClose, onConfirm }: BaseProps
   )
 }
 
-export function ResetPasswordModal({ open, user, onClose, onConfirm }: BaseProps) {
+/** Đặt mật khẩu mới qua mergeUserAccount (808gps không có luồng gửi email đặt lại). */
+export function ResetPasswordModal({
+  open,
+  user,
+  onClose,
+  onConfirm,
+}: Omit<BaseProps, 'onConfirm'> & { onConfirm: (password: string) => void }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const close = () => {
+    setPassword('')
+    setError('')
+    onClose()
+  }
+  const submit = () => {
+    if (password.length < 6) {
+      setError('Mật khẩu tối thiểu 6 ký tự')
+      return
+    }
+    onConfirm(password)
+    setPassword('')
+    setError('')
+  }
   return (
-    <Modal id="user-reset-password-modal" open={open} onClose={onClose} labelledBy="user-reset-title" maxWidth={460}>
+    <Modal id="user-reset-password-modal" open={open} onClose={close} labelledBy="user-reset-title" maxWidth={460}>
       <div className="flex items-start justify-between px-7 pt-6 pb-2">
         <h3 id="user-reset-title" className="m-0 text-lg font-bold text-text-main">
           Đặt lại mật khẩu?
@@ -125,15 +147,14 @@ export function ResetPasswordModal({ open, user, onClose, onConfirm }: BaseProps
           type="button"
           aria-label="Đóng"
           className="cursor-pointer border-none bg-transparent p-1 text-text-muted"
-          onClick={onClose}
+          onClick={close}
         >
           <i className="fa-solid fa-xmark" aria-hidden="true" />
         </button>
       </div>
       <ModalBody>
         <p className="m-0 mb-4 text-sm leading-relaxed text-text-muted">
-          Hệ thống sẽ gửi liên kết đặt lại mật khẩu tới email của người dùng. Liên kết có hiệu lực trong 15 phút và
-          chỉ dùng một lần.
+          Đặt mật khẩu mới cho tài khoản. Hãy báo mật khẩu mới cho người dùng qua kênh an toàn.
         </p>
         {user ? (
           <div className="flex items-center gap-3 rounded-xl bg-[#f7f4ef] px-4 py-3">
@@ -144,18 +165,32 @@ export function ResetPasswordModal({ open, user, onClose, onConfirm }: BaseProps
               <div className="font-semibold text-text-main">{user.fullName}</div>
               <div className="mt-0.5 flex items-center gap-1.5 text-sm text-text-muted">
                 <i className="fa-solid fa-envelope text-xs" aria-hidden="true" />
-                {user.email}
+                {user.email || user.username}
               </div>
             </div>
           </div>
         ) : null}
+        <label htmlFor="user-new-password" className="mt-4 mb-1.5 block text-[0.8rem] font-semibold text-[#334155]">
+          Mật khẩu mới
+        </label>
+        <input
+          id="user-new-password"
+          type="password"
+          autoComplete="new-password"
+          className={modalInputClass}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <div className="mt-1.5 min-h-5 text-sm text-danger" role="alert">
+          {error}
+        </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="outline" size="modal" onClick={onClose}>
+        <Button variant="outline" size="modal" onClick={close}>
           Hủy
         </Button>
-        <Button variant="primary" size="modalWide" onClick={onConfirm}>
-          Gửi liên kết
+        <Button variant="primary" size="modalWide" onClick={submit}>
+          Đặt mật khẩu
         </Button>
       </ModalFooter>
     </Modal>

@@ -5,7 +5,13 @@ import { ContentSection } from '../../shared/ui/Section'
 import { showToast } from '../../shared/ui/toastStore'
 import { ConfirmDeactivateModal, ConfirmDeleteModal, ResetPasswordModal } from './components/UserConfirmModals'
 import { UserFormModal } from './components/UserFormModal'
-import { useDeleteUserMutation, useSaveUserMutation, useSetUserStatusMutation, usersQueryOptions } from './queries'
+import {
+  useDeleteUserMutation,
+  useResetUserPasswordMutation,
+  useSaveUserMutation,
+  useSetUserStatusMutation,
+  usersQueryOptions,
+} from './queries'
 import type { UserStatus } from './types'
 import {
   EMPTY_USER_FORM,
@@ -87,6 +93,7 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
   const saveMutation = useSaveUserMutation(closeDialog)
   const statusMutation = useSetUserStatusMutation(closeDialog)
   const deleteMutation = useDeleteUserMutation(closeDialog)
+  const resetMutation = useResetUserPasswordMutation(closeDialog)
 
   const onCreateOrUpdate = (values: UserFormValues) => {
     if (dialog.type !== 'form' || saveMutation.isPending) return
@@ -326,10 +333,9 @@ export function UsersSection({ hidden }: { hidden: boolean }) {
         open={dialog.type === 'reset'}
         user={dialogUser}
         onClose={closeDialog}
-        onConfirm={() => {
-          if (!dialogUser) return
-          showToast(`Đã gửi liên kết đặt lại mật khẩu tới ${dialogUser.email}`, 'success')
-          closeDialog()
+        onConfirm={(password) => {
+          if (!dialogUser || resetMutation.isPending) return
+          resetMutation.mutate({ user: dialogUser, password })
         }}
       />
     </ContentSection>

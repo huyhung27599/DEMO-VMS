@@ -65,6 +65,15 @@ export function useSetUserStatusMutation(onDone: () => void) {
   )
 }
 
+export function useResetUserPasswordMutation(onDone: () => void) {
+  return useUserMutation(
+    ({ user, password }: { user: User; password: string }) =>
+      api.mergeUserAccount(toMergeUserParams({ ...user, phone: user.phone ?? '', password }, { id: user.id })),
+    () => 'Đã đặt mật khẩu mới',
+    onDone,
+  )
+}
+
 export function useDeleteUserMutation(onDone: () => void) {
   return useUserMutation((id: string) => api.deleteUserAccount(id), () => 'Đã xóa người dùng', onDone)
 }

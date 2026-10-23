@@ -84,4 +84,18 @@ describe('UsersSection UI', () => {
     fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Xóa' }))
     await waitFor(() => expect(api.deleteUserAccount).toHaveBeenCalledWith('3'))
   })
+
+  it('đặt lại mật khẩu → mergeUserAccount(id, password)', async () => {
+    renderWithProviders(<UsersSection hidden={false} />, { route: '/users' })
+    const row = (await screen.findByText('admin_geic', { selector: 'span' })).closest('tr')!
+    fireEvent.click(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đặt mật khẩu' }))
+    expect(await within(dialog).findByText('Mật khẩu tối thiểu 6 ký tự')).toBeInTheDocument()
+    fireEvent.change(within(dialog).getByLabelText('Mật khẩu mới'), { target: { value: 'NewPass1' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đặt mật khẩu' }))
+    await waitFor(() =>
+      expect(api.mergeUserAccount).toHaveBeenCalledWith(expect.objectContaining({ id: '2', account: 'admin_geic', password: 'NewPass1' })),
+    )
+  })
 })
